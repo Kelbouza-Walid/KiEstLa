@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "enrollments", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "module_id"}))
+// TODO: remettre la contrainte d'unicité quand la relation module sera réactivée
+// @Table(name = "enrollments", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "module_id"}))
+@Table(name = "enrollments")
 @Getter @Setter
 public class Enrollment {
 
@@ -17,7 +19,9 @@ public class Enrollment {
     @JoinColumn(name = "user_id")
     private User user;
 
+        /*
     @ManyToOne(optional = false)
     @JoinColumn(name = "module_id")
     private Module module;
+        */
 }
