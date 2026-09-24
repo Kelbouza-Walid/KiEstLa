@@ -28,4 +28,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    /* // Quand la personne chargée de créer l'entité module on pourra decomenter cette partie
+    @ManyToMany
+    @JoinTable(name = "enrollments",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "module_id"))
+    private Set<Module> modules = new HashSet<>();
+    */
 }
