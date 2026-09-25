@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Sort;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
@@ -30,17 +31,25 @@ public class SecretaryController {
     public record FakeModule(String name, String referentTeacherName) {
     }
 
-    @PostMapping("/absence/{id}/toggle-status")
-    public String toggleAbsenceStatus(@PathVariable Long id) {
+    @PostMapping("/absence/{id}/justify")
+    public String justifyAbsence(@PathVariable Long id, @RequestParam String justificationText) {
         Optional<Absence> absenceOpt = absenceRepository.findById(id);
         if (absenceOpt.isPresent()) {
             Absence absence = absenceOpt.get();
-            if (absence.getStatus() == AbsenceStatus.UNJUSTIFIED) {
-                absence.setStatus(AbsenceStatus.JUSTIFIED);
-            } else {
-                absence.setStatus(AbsenceStatus.UNJUSTIFIED);
-            }
+            absence.setJustification(justificationText);
+            absence.setStatus(AbsenceStatus.JUSTIFIED);
+            absenceRepository.save(absence);
+        }
+        return "redirect:/secretary";
+    }
 
+    @PostMapping("/absence/{id}/unjustify")
+    public String unjustifyAbsence(@PathVariable Long id) {
+        Optional<Absence> absenceOpt = absenceRepository.findById(id);
+        if (absenceOpt.isPresent()) {
+            Absence absence = absenceOpt.get();
+            absence.setJustification(null);
+            absence.setStatus(AbsenceStatus.UNJUSTIFIED);
             absenceRepository.save(absence);
         }
         return "redirect:/secretary";
