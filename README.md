@@ -13,6 +13,7 @@ This project requires a PostgreSQL database.
    ./mvnw spring-boot:run
    ```
 
+Note for Testing: The CI/CD pipeline only executes features tagged with @implemented.
 
 ## Getting started
 
