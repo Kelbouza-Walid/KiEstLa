@@ -1,7 +1,6 @@
 package fr.m2.groupe7.kiestla.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Sort;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
-import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
-import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 
 /**
  * Secretary Page controller
@@ -25,7 +22,7 @@ import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 public class SecretaryController {
 
     @Autowired
-    private AbsenceRepository absenceRepository;
+    private fr.m2.groupe7.kiestla.service.AbsenceService absenceService;
 
     // TODO: remove this once real module is implemented
     public record FakeModule(String name, String referentTeacherName) {
@@ -33,25 +30,13 @@ public class SecretaryController {
 
     @PostMapping("/absence/{id}/justify")
     public String justifyAbsence(@PathVariable Long id, @RequestParam String justificationText) {
-        Optional<Absence> absenceOpt = absenceRepository.findById(id);
-        if (absenceOpt.isPresent()) {
-            Absence absence = absenceOpt.get();
-            absence.setJustification(justificationText);
-            absence.setStatus(AbsenceStatus.JUSTIFIED);
-            absenceRepository.save(absence);
-        }
+        absenceService.justifyAbsence(id, justificationText);
         return "redirect:/secretary";
     }
 
     @PostMapping("/absence/{id}/unjustify")
     public String unjustifyAbsence(@PathVariable Long id) {
-        Optional<Absence> absenceOpt = absenceRepository.findById(id);
-        if (absenceOpt.isPresent()) {
-            Absence absence = absenceOpt.get();
-            absence.setJustification(null);
-            absence.setStatus(AbsenceStatus.UNJUSTIFIED);
-            absenceRepository.save(absence);
-        }
+        absenceService.unjustifyAbsence(id);
         return "redirect:/secretary";
     }
 
@@ -63,7 +48,7 @@ public class SecretaryController {
      */
     @GetMapping
     public String index(Model model) {
-        List<Absence> absences = absenceRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
+        List<Absence> absences = absenceService.getAllAbsencesSortedByDateDesc();
 
         List<FakeModule> modules = List.of(
                 new FakeModule("Fonctionnal Testing", "Mr Bouquet"),
