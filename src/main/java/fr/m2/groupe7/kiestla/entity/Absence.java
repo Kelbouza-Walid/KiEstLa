@@ -18,11 +18,9 @@ public class Absence {
     @JoinColumn(name = "student_id")
     private User student;
 
-    /*
     @ManyToOne(optional = false)
     @JoinColumn(name = "module_id")
     private Module module;
-    */
 
     @Column(nullable = false)
     private LocalDate date;
