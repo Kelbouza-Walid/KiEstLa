@@ -54,6 +54,29 @@
     </form>
 </section>
 
+
+<h2>Absences</h2>
+<p th:if="${#lists.isEmpty(absences)}">Aucune absence enregistrée pour ce module.</p>
+<table th:unless="${#lists.isEmpty(absences)}">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Étudiant</th>
+        <th>Statut</th>
+        <th>Justification</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="absence : ${absences}">
+        <td th:text="${absence.date}"></td>
+        <td th:text="${absence.student.firstName + ' ' + absence.student.lastName}"></td>
+        <td th:text="${absence.status}"></td>
+        <td th:text="${absence.justification != null ? absence.justification : '-'}"></td>
+    </tr>
+    </tbody>
+</table>
+
+
 <a th:href="@{/teacher}">Retour à mes modules</a>
 </body>
 </html>

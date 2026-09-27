@@ -3,6 +3,7 @@ package fr.m2.groupe7.kiestla.controller;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
+import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -26,10 +27,15 @@ public class TeacherController {
 
     private final UserRepository userRepository;
     private final ModuleRepository moduleRepository;
+    private final AbsenceRepository absenceRepository;
 
-    public TeacherController(UserRepository userRepository, ModuleRepository moduleRepository) {
+    public TeacherController(
+            UserRepository userRepository,
+            ModuleRepository moduleRepository,
+            AbsenceRepository absenceRepository) {
         this.userRepository = userRepository;
         this.moduleRepository = moduleRepository;
+        this.absenceRepository = absenceRepository;
     }
 
     @GetMapping("/teacher")
@@ -58,6 +64,7 @@ public class TeacherController {
         }
 
         model.addAttribute("module", module);
+        model.addAttribute("absences", absenceRepository.findByModuleIdOrderByDateDesc(id));
         List<User> moduleTeachers = new ArrayList<>(module.getStudents().stream()
                 .filter(user -> user.getRole() == Role.TEACHER)
                 .toList());

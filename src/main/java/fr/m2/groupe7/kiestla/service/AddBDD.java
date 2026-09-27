@@ -3,6 +3,8 @@ package fr.m2.groupe7.kiestla.service;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.entity.Module;
+import fr.m2.groupe7.kiestla.entity.Absence;
+import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -11,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 
 
 //fichier juste la pour ajouter des utilisateurs/module/absence
@@ -19,15 +22,18 @@ public class AddBDD {
 
     private final UserRepository userRepository;
     private final ModuleRepository moduleRepository;
+    private final AbsenceRepository absenceRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AddBDD(
             UserRepository userRepository,
             ModuleRepository moduleRepository,
+            AbsenceRepository absenceRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.moduleRepository = moduleRepository;
+        this.absenceRepository = absenceRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -80,8 +86,17 @@ public class AddBDD {
         });
 
         teacher.getModules().add(module);
+        student.getModules().add(module);
         userRepository.save(teacher);
         userRepository.save(teacher2);
         userRepository.save(student);
+
+        if (absenceRepository.findByStudentIdAndModuleId(student.getId(), module.getId()).isEmpty()) {
+            Absence absence = new Absence();
+            absence.setStudent(student);
+            absence.setModule(module);
+            absence.setDate(LocalDate.now());
+            absenceRepository.save(absence);
+        }
     }
 }
