@@ -23,6 +23,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                .requestMatchers("/teacher", "/teacher/**").hasRole("TEACHER")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
