@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${module.name}">Participants du module</title>
+</head>
+<body>
+<h1 th:text="${module.name}"></h1>
+
+<p th:if="${successMessage}" th:text="${successMessage}"></p>
+<p th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+<h2>Étudiants</h2>
+<p th:if="${#lists.isEmpty(students)}">Aucun étudiant n’est inscrit à ce module.</p>
+<ul th:unless="${#lists.isEmpty(students)}">
+    <li th:each="student : ${students}"
+        th:text="${student.firstName + ' ' + student.lastName}"></li>
+</ul>
+
+<h2>Professeurs</h2>
+<p th:if="${#lists.isEmpty(teachers)}">Aucun professeur n’est associé à ce module.</p>
+<ul th:unless="${#lists.isEmpty(teachers)}">
+    <li th:each="teacher : ${teachers}"
+        th:text="${teacher.firstName + ' ' + teacher.lastName}"></li>
+</ul>
+
+<h2>Ajouter un étudiant</h2>
+<p th:if="${#lists.isEmpty(availableStudents)}">Aucun étudiant disponible à ajouter.</p>
+<form th:unless="${#lists.isEmpty(availableStudents)}"
+      th:action="@{/teacher/modules/{id}/students(id=${module.id})}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <label for="studentId">Étudiant :</label>
+    <select id="studentId" name="studentId" required>
+        <option th:each="student : ${availableStudents}"
+                th:value="${student.id}"
+                th:text="${student.firstName + ' ' + student.lastName + ' (' + student.login + ')'}"></option>
+    </select>
+    <button type="submit">Ajouter</button>
+</form>
+
+<section th:if="${isReferenceTeacher}">
+    <h2>Ajouter un professeur</h2>
+    <p th:if="${#lists.isEmpty(availableTeachers)}">Aucun autre professeur disponible à ajouter.</p>
+    <form th:unless="${#lists.isEmpty(availableTeachers)}"
+          th:action="@{/teacher/modules/{id}/teachers(id=${module.id})}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <label for="teacherId">Professeur :</label>
+        <select id="teacherId" name="teacherId" required>
+            <option th:each="teacher : ${availableTeachers}"
+                    th:value="${teacher.id}"
+                    th:text="${teacher.firstName + ' ' + teacher.lastName + ' (' + teacher.login + ')'}"></option>
+        </select>
+        <button type="submit">Ajouter</button>
+    </form>
+</section>
+
+<a th:href="@{/teacher}">Retour à mes modules</a>
+</body>
+</html>
