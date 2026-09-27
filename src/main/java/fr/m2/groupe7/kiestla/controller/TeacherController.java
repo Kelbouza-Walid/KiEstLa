@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,18 +47,25 @@ public class TeacherController {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Utilisateur non trouvé : " + authentication.getName()));
 
+        Module module = moduleRepository.findWithStudentsById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Module introuvable : " + id));
         boolean assignedToTeacher = teacher.getModules().stream()
-                .anyMatch(module -> module.getId().equals(id));
-        if (!assignedToTeacher) {
+                .anyMatch(assignedModule -> assignedModule.getId().equals(id));
+        boolean isReferenceTeacher = module.getReferenceTeacher() != null
+                && module.getReferenceTeacher().getLogin().equals(authentication.getName());
+        if (!assignedToTeacher && !isReferenceTeacher) {
             return "redirect:/teacher";
         }
 
-        Module module = moduleRepository.findWithStudentsById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Module introuvable : " + id));
         model.addAttribute("module", module);
-        model.addAttribute("teachers", module.getStudents().stream()
+        List<User> moduleTeachers = new ArrayList<>(module.getStudents().stream()
                 .filter(user -> user.getRole() == Role.TEACHER)
                 .toList());
+        if (module.getReferenceTeacher() != null
+                && moduleTeachers.stream().noneMatch(user -> user.getId().equals(module.getReferenceTeacher().getId()))) {
+            moduleTeachers.add(module.getReferenceTeacher());
+        }
+        model.addAttribute("teachers", moduleTeachers);
         model.addAttribute("students", module.getStudents().stream()
                 .filter(user -> user.getRole() == Role.STUDENT)
                 .toList());
@@ -67,6 +76,16 @@ public class TeacherController {
         model.addAttribute("availableStudents", userRepository.findByRole(Role.STUDENT).stream()
                 .filter(student -> !enrolledStudentIds.contains(student.getId()))
                 .toList());
+
+        model.addAttribute("isReferenceTeacher", isReferenceTeacher);
+        if (isReferenceTeacher) {
+            Set<Long> enrolledTeacherIds = moduleTeachers.stream()
+                    .map(User::getId)
+                    .collect(Collectors.toSet());
+            model.addAttribute("availableTeachers", userRepository.findByRole(Role.TEACHER).stream()
+                    .filter(candidate -> !enrolledTeacherIds.contains(candidate.getId()))
+                    .toList());
+        }
 
         return "teacher-module";
     }
@@ -109,6 +128,43 @@ public class TeacherController {
         userRepository.save(student);
         redirectAttributes.addFlashAttribute(
                 "successMessage", "L’étudiant a été ajouté au module.");
+        return "redirect:/teacher/modules/" + id;
+    }
+
+    @PostMapping("/teacher/modules/{id}/teachers")
+    @Transactional
+    public String addTeacherToModule(
+            @PathVariable Long id,
+            @RequestParam Long teacherId,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        Module module = moduleRepository.findWithStudentsById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Module introuvable : " + id));
+
+        if (module.getReferenceTeacher() == null
+                || !module.getReferenceTeacher().getLogin().equals(authentication.getName())) {
+            return "redirect:/teacher";
+        }
+
+        User teacherToAdd = userRepository.findWithModulesById(teacherId).orElse(null);
+        if (teacherToAdd == null || teacherToAdd.getRole() != Role.TEACHER) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "L’utilisateur sélectionné n’est pas un professeur.");
+            return "redirect:/teacher/modules/" + id;
+        }
+
+        boolean alreadyAssigned = teacherToAdd.getModules().stream()
+                .anyMatch(assignedModule -> assignedModule.getId().equals(id));
+        if (alreadyAssigned) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "Ce professeur est déjà associé à ce module.");
+            return "redirect:/teacher/modules/" + id;
+        }
+
+        teacherToAdd.getModules().add(module);
+        userRepository.save(teacherToAdd);
+        redirectAttributes.addFlashAttribute(
+                "successMessage", "Le professeur a été ajouté au module.");
         return "redirect:/teacher/modules/" + id;
     }
 }

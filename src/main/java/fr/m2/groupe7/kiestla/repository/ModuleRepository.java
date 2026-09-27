@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface ModuleRepository extends JpaRepository<Module, Long> {
     Optional<Module> findByName(String name);
 
-    @EntityGraph(attributePaths = "students")
+    @EntityGraph(attributePaths = {"students", "referenceTeacher"})
     Optional<Module> findWithStudentsById(Long id);
 }

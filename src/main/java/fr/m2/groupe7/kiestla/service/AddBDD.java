@@ -11,6 +11,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+
+
+//fichier juste la pour ajouter des utilisateurs/module/absence
 @Component
 public class AddBDD {
 
@@ -43,6 +46,18 @@ public class AddBDD {
             return userRepository.save(newTeacher);
         });
 
+        String loginT = "prof";
+
+        User teacher2 = userRepository.findByLogin(loginT).orElseGet(() -> {
+            User newTeacher = new User();
+            newTeacher.setLastName("cher");
+            newTeacher.setFirstName("tea");
+            newTeacher.setLogin(loginT);
+            newTeacher.setPassword(passwordEncoder.encode("teacher"));
+            newTeacher.setRole(Role.TEACHER);
+            return userRepository.save(newTeacher);
+        });
+
         String loginS = "student";
 
         User student = userRepository.findByLogin(loginS).orElseGet(() -> {
@@ -66,6 +81,7 @@ public class AddBDD {
 
         teacher.getModules().add(module);
         userRepository.save(teacher);
+        userRepository.save(teacher2);
         userRepository.save(student);
     }
 }
