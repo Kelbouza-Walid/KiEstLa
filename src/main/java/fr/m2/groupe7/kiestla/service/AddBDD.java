@@ -1,4 +1,4 @@
-package fr.m2.groupe7.kiestla.service;
+/*package fr.m2.groupe7.kiestla.service;
 
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
@@ -75,7 +75,6 @@ public class AddBDD {
             newStudent.setRole(Role.STUDENT);
             return userRepository.save(newStudent);
         });
-        student.setRole(Role.STUDENT);
 
         String moduleName = "Mathématiques";
         Module module = moduleRepository.findByName(moduleName).orElseGet(() -> {
@@ -99,4 +98,4 @@ public class AddBDD {
             absenceRepository.save(absence);
         }
     }
-}
+}*/
