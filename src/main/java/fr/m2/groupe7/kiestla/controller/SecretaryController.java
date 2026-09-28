@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Sort;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
+import fr.m2.groupe7.kiestla.entity.Module;
+import fr.m2.groupe7.kiestla.service.AbsenceService;
+import fr.m2.groupe7.kiestla.service.ModuleService;
 
 /**
  * Secretary Page controller
@@ -22,7 +25,10 @@ import fr.m2.groupe7.kiestla.entity.Absence;
 public class SecretaryController {
 
     @Autowired
-    private fr.m2.groupe7.kiestla.service.AbsenceService absenceService;
+    private AbsenceService absenceService;
+
+    @Autowired
+    private ModuleService moduleService;
 
     // TODO: remove this once real module is implemented
     public record FakeModule(String name, String referentTeacherName) {
@@ -50,9 +56,7 @@ public class SecretaryController {
     public String index(Model model) {
         List<Absence> absences = absenceService.getAllAbsencesSortedByDateDesc();
 
-        List<FakeModule> modules = List.of(
-                new FakeModule("Fonctionnal Testing", "Mr Bouquet"),
-                new FakeModule("Horrible course", "Horrible teacher"));
+        List<Module> modules = moduleService.getAllModules();
 
         model.addAttribute("absences", absences);
         model.addAttribute("modules", modules);

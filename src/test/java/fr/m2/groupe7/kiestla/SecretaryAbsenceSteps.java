@@ -24,13 +24,18 @@ import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
+import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
+import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
 public class SecretaryAbsenceSteps {
 
     @Autowired
     private AbsenceRepository absenceRepository;
+
+    @Autowired
+    private ModuleRepository moduleRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -62,11 +67,23 @@ public class SecretaryAbsenceSteps {
 
     @Given("I have already logged in")
     public void i_have_already_logged_in() {
+        absenceRepository.deleteAll();
+        moduleRepository.deleteAll();
+        userRepository.deleteAll();
+        User secretary = new User();
+        secretary.setFirstName("FirstName");
+        secretary.setLastName("LastName");
+        secretary.setLogin("secretary");
+        secretary.setPassword("{noop}testpassword");
+        secretary.setRole(Role.SECRETARY);
+        userRepository.save(secretary);
+
         page.navigate("http://localhost:8080/login");
-        page.fill("input[name='username']", "secretary");
+        page.fill("input[name='login']", "secretary");
         page.fill("input[name='password']", "testpassword");
         page.click("button[type='submit']");
-        page.waitForURL("http://localhost:8080/");
+
+        page.waitForURL("**/secretary");
     }
 
     // --- Scenario: Adding a valid motive to an absence (1174) ---
@@ -74,7 +91,6 @@ public class SecretaryAbsenceSteps {
     @Given("The student motive is valid")
     public void the_student_motive_is_valid() {
         absenceRepository.deleteAll();
-        userRepository.deleteAll();
 
         User student = new User();
         student.setFirstName("Gaspard");
@@ -84,8 +100,13 @@ public class SecretaryAbsenceSteps {
         student.setRole(Role.STUDENT);
         student = userRepository.save(student);
 
+        Module module = new Module();
+        module.setName("Functionnal testing");
+        moduleRepository.save(module);
+
         Absence absence = new Absence();
         absence.setStudent(student);
+        absence.setModule(module);
         absence.setDate(LocalDate.now());
         absence.setStatus(AbsenceStatus.UNJUSTIFIED);
         Absence saved = absenceRepository.save(absence);
@@ -125,7 +146,6 @@ public class SecretaryAbsenceSteps {
     @Given("The absence is currently justified")
     public void the_absence_is_currently_justified() {
         absenceRepository.deleteAll();
-        userRepository.deleteAll();
 
         User student = new User();
         student.setFirstName("Gaspard");
@@ -135,8 +155,13 @@ public class SecretaryAbsenceSteps {
         student.setRole(Role.STUDENT);
         student = userRepository.save(student);
 
+        Module module = new Module();
+        module.setName("Functionnal testing");
+        moduleRepository.save(module);
+
         Absence absence = new Absence();
         absence.setStudent(student);
+        absence.setModule(module);
         absence.setDate(LocalDate.now());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
         absence.setJustification("Medical thing");
@@ -147,8 +172,7 @@ public class SecretaryAbsenceSteps {
 
     @When("I enter a new invalid motive for the absence")
     public void i_enter_a_new_invalid_motive_for_the_absence() {
-        // TODO: Implement this
-        // throw new PendingException();
+        page.navigate("http://localhost:8080/secretary");
     }
 
     @When("I set the absence as unjustified")
