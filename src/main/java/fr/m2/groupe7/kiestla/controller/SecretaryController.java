@@ -30,9 +30,7 @@ public class SecretaryController {
     @Autowired
     private ModuleService moduleService;
 
-    // TODO: remove this once real module is implemented
-    public record FakeModule(String name, String referentTeacherName) {
-    }
+
 
     @PostMapping("/absence/{id}/justify")
     public String justifyAbsence(@PathVariable Long id, @RequestParam String justificationText) {
