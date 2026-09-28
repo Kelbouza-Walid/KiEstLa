@@ -6,11 +6,12 @@ import org.junit.platform.suite.api.SelectClasspathResource;
 import org.junit.platform.suite.api.Suite;
 
 import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
+import static io.cucumber.junit.platform.engine.Constants.FILTER_TAGS_PROPERTY_NAME;
 
-// Uncomment the following annotations when you add your first .feature file!
-// @Suite
-// @IncludeEngines("cucumber")
-// @SelectClasspathResource("features")
-// @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "fr.m2.groupe7.kiestla")
+@Suite
+@IncludeEngines("cucumber")
+@org.junit.platform.suite.api.SelectDirectories("tests/acceptance/features")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "fr.m2.groupe7.kiestla")
+@ConfigurationParameter(key = FILTER_TAGS_PROPERTY_NAME, value = "@implemented")
 public class CucumberTest {
 }
