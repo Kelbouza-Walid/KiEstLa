@@ -10,12 +10,22 @@ cache:
   paths:
     - .m2/repository
 
-test-java:
+test-unit:
   stage: test
   image: eclipse-temurin:21-jdk-alpine
   script:
     - chmod +x mvnw
-    - ./mvnw test
+    - ./mvnw test -Dtest="\!CucumberTest"
+  only:
+    - merge_requests
+    - main
+
+test-acceptance:
+  stage: test
+  image: mcr.microsoft.com/playwright/java:v1.42.0-jammy
+  script:
+    - chmod +x mvnw
+    - ./mvnw test -Dtest="CucumberTest"
   only:
     - merge_requests
     - main
