@@ -15,7 +15,7 @@ test-unit:
   image: eclipse-temurin:21-jdk-alpine
   script:
     - chmod +x mvnw
-    - ./mvnw test -Dtest="\!CucumberTest"
+    - ./mvnw test -Dtest='!CucumberTest'
   only:
     - merge_requests
     - main
