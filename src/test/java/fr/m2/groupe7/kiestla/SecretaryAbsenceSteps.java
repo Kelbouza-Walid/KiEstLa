@@ -50,10 +50,11 @@ public class SecretaryAbsenceSteps {
     @Before
     public void setupBrowser() {
         playwright = Playwright.create();
+        boolean isCI = System.getenv("CI") != null || System.getProperty("CI") != null;
         browser = playwright.chromium().launch(
                 new com.microsoft.playwright.BrowserType.LaunchOptions()
-                        .setHeadless(false)
-                        .setSlowMo(1000));
+                        .setHeadless(isCI)
+                        .setSlowMo(isCI ? 0 : 1000));
         page = browser.newPage();
     }
 
