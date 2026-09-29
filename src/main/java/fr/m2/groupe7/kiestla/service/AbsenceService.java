@@ -24,6 +24,13 @@ public class AbsenceService {
     }
 
     /**
+     * Retrieves all absences sorted by date in descending order.
+     */
+    public List<Absence> getAbsencesWithID(Long id){
+        return absenceRepository.findByModuleId(id);
+    }
+
+    /**
      * Adds a justification to an absence and marks its status as JUSTIFIED.
      */
     public void justifyAbsence(Long id, String justificationText) {
