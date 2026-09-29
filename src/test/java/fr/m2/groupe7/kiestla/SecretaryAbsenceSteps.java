@@ -1,7 +1,5 @@
 package fr.m2.groupe7.kiestla;
 
-import io.cucumber.java.After;
-import io.cucumber.java.Before;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -16,9 +14,8 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.microsoft.playwright.Browser;
+
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
@@ -42,28 +39,8 @@ public class SecretaryAbsenceSteps {
 
     private Long currentAbsenceId;
 
-    // Playwright setup
-    private Playwright playwright;
-    private Browser browser;
-    private Page page;
-
-    @Before
-    public void setupBrowser() {
-        playwright = Playwright.create();
-        boolean isCI = System.getenv("CI") != null || System.getProperty("CI") != null;
-        browser = playwright.chromium().launch(
-                new com.microsoft.playwright.BrowserType.LaunchOptions()
-                        .setHeadless(isCI)
-                        .setSlowMo(isCI ? 0 : 1000));
-        page = browser.newPage();
-    }
-
-    @After
-    public void closeBrowser() {
-        if (browser != null)
-            browser.close();
-        if (playwright != null)
-            playwright.close();
+    private Page getPage() {
+        return PlaywrightHooks.getPage();
     }
 
     @Given("I have already logged in")
@@ -79,12 +56,12 @@ public class SecretaryAbsenceSteps {
         secretary.setRole(Role.SECRETARY);
         userRepository.save(secretary);
 
-        page.navigate("http://localhost:8080/login");
-        page.fill("input[name='login']", "secretary");
-        page.fill("input[name='password']", "testpassword");
-        page.click("button[type='submit']");
+        getPage().navigate("http://localhost:8080/login");
+        getPage().fill("input[name='login']", "secretary");
+        getPage().fill("input[name='password']", "testpassword");
+        getPage().click("button[type='submit']");
 
-        page.waitForURL("**/secretary");
+        getPage().waitForURL("**/secretary");
     }
 
     // --- Scenario: Adding a valid motive to an absence (1174) ---
@@ -117,9 +94,9 @@ public class SecretaryAbsenceSteps {
 
     @When("I enter the motive for the absence")
     public void i_enter_the_motive_for_the_absence() {
-        page.navigate("http://localhost:8080/secretary");
-        page.getByTestId("btn-add-justification").click();
-        page.getByTestId("input-justification-text").fill("Lazy");
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-add-justification").click();
+        getPage().getByTestId("input-justification-text").fill("Lazy");
     }
 
     @When("I add a corresponding description")
@@ -130,13 +107,13 @@ public class SecretaryAbsenceSteps {
 
     @When("I set the absence as justified")
     public void i_set_the_absence_as_justified() {
-        page.getByTestId("btn-save-justification").click();
+        getPage().getByTestId("btn-save-justification").click();
     }
 
     @Then("The absence is registered as justified")
     public void the_absence_is_registered_as_justified() {
-        assertThat(page.getByTestId("absence-status")).hasText("JUSTIFIED");
-        assertThat(page.getByTestId("absence-justification")).hasText("Lazy");
+        assertThat(getPage().getByTestId("absence-status")).hasText("JUSTIFIED");
+        assertThat(getPage().getByTestId("absence-justification")).hasText("Lazy");
 
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.JUSTIFIED, updated.getStatus());
@@ -173,18 +150,18 @@ public class SecretaryAbsenceSteps {
 
     @When("I enter a new invalid motive for the absence")
     public void i_enter_a_new_invalid_motive_for_the_absence() {
-        page.navigate("http://localhost:8080/secretary");
+        getPage().navigate("http://localhost:8080/secretary");
     }
 
     @When("I set the absence as unjustified")
     public void i_set_the_absence_as_unjustified() {
-        page.onceDialog(dialog -> dialog.accept());
-        page.getByTestId("btn-remove-justification").click();
+        getPage().onceDialog(dialog -> dialog.accept());
+        getPage().getByTestId("btn-remove-justification").click();
     }
 
     @Then("The absence is registered as unjustified")
     public void the_absence_is_registered_as_unjustified() {
-        assertThat(page.getByTestId("absence-status")).hasText("UNJUSTIFIED");
+        assertThat(getPage().getByTestId("absence-status")).hasText("UNJUSTIFIED");
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.UNJUSTIFIED, updated.getStatus());
         assertNull(updated.getJustification());

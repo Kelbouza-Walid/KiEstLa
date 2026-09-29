@@ -51,7 +51,7 @@
                 <td data-testid="absence-justification" th:text="${absence.justification}"></td>
             </tr>
             <tr th:if="${#lists.isEmpty(absences)}">
-                <td colspan="5" class="text-center text-muted py-3">No absences found for this module.</td>
+                <td colspan="5" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
             </tr>
         </my_rows>
     </div>
