@@ -18,15 +18,15 @@ import static org.springframework.security.test.web.servlet.response.SecurityMoc
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 /**
- * Teste le flux complet de l'authentification :
- * j'ai  dabord créer un utilisateur réel
- * puis j'ai fais une réele simulation de login ( un post avec son login et mdp )
- * après j'ai vérifie si SpringSecurity refuse ou accepte la connexion
- * et puis une vérification de la redirection selon le role (à travers CustomAuthenticationSuccessHandler)
+ * Tests the complete authentication flow:
+ * First I created a real user
+ * Then I simulated an actual login (a POST request with login and password)
+ * Then I verified if SpringSecurity refuses or accepts the connection
+ * And finally checked the redirection based on role (through CustomAuthenticationSuccessHandler)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional // cette annotation annule les changements en base après chaque test, pour ne pas polluer les données
+@Transactional // this annotation rolls back database changes after each test, to not pollute data
 class AuthenticationFlowTest {
 
     @Autowired
@@ -40,7 +40,7 @@ class AuthenticationFlowTest {
 
     @BeforeEach
     void setUp() {
-        // j'ai crée un vrai utilisateur et j'ai donné un login et pass avec setters
+        // created a real user and gave it a login and pass using setters
         User user = new User();
         user.setFirstName("kelbouza");
         user.setLastName("walid");
@@ -55,8 +55,8 @@ class AuthenticationFlowTest {
         mockMvc.perform(formLogin("/login")
                         .user("login", "walid1")
                         .password("password", "walid123"))
-                .andExpect(authenticated())              // la je vérifie si lutilisateur est bien créé
-                .andExpect(redirectedUrl("/student"));    // la je vérifie la redirection selon le role
+                .andExpect(authenticated())              // checking if the user is authenticated
+                .andExpect(redirectedUrl("/student"));    // checking redirection based on role
     }
 
     @Test
@@ -64,7 +64,7 @@ class AuthenticationFlowTest {
         mockMvc.perform(formLogin("/login")
                         .user("login", "walid1")
                         .password("password", "mot de pass faux"))
-                .andExpect(unauthenticated())             //  la je vérifie la connexion echoué
+                .andExpect(unauthenticated())             // checking failed connection
                 .andExpect(redirectedUrl("/login?error=true"));
     }
 }

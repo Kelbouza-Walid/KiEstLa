@@ -36,7 +36,7 @@ public class TeacherAddStudentTest {
     @Autowired
     private UserRepository userRepository;
 
-    // État partagé entre les steps du scénario
+    // Shared state between steps and scenario
     private User referenceTeacher;
     private User teacherToAdd;
     private User studentToAdd;
@@ -83,7 +83,7 @@ public class TeacherAddStudentTest {
         newModule.setReferenceTeacher(referenceTeacher);
         module = moduleRepository.save(newModule);
 
-        // User est le côté propriétaire de la relation : on inscrit via l'utilisateur
+        // User is the proprietary side of the relation : we will register via the user
         enroll(referenceTeacher, module);
         enroll(student, module);
 
@@ -91,7 +91,7 @@ public class TeacherAddStudentTest {
         absence.setStudent(student);
         absence.setModule(module);
         absence.setDate(LocalDate.now());
-        absence.setStatus(AbsenceStatus.values()[0]); // remplace par la valeur voulue
+        absence.setStatus(AbsenceStatus.values()[0]); // replace by the desired value
         absenceRepository.save(absence);
     }
 
@@ -134,7 +134,7 @@ public class TeacherAddStudentTest {
 
     @Given("The student exists in the database")
     public void the_student_exists_in_the_database() {
-        // Étudiant existant mais pas encore inscrit au module
+        // Existing student but not yet registerd to the module
         studentToAdd = createUser("Bob", "Leroy", "student2", Role.STUDENT);
     }
 
