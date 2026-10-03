@@ -1,6 +1,19 @@
 # groupe7
 
+## Local Development Guide
 
+This project requires a PostgreSQL database.
+
+1. Start the local database in the background:
+   ```bash
+   DB_PASSWORD=local_password docker-compose up -d db
+   ```
+2. Run the `KiestlaApplication` main class
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+
+Note for Testing: The CI/CD pipeline only executes features tagged with @implemented.
 
 ## Getting started
 

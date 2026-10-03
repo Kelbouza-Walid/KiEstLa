@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+<section>
+    <div class="row justify-content-center mt-5">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="text-primary fw-bold">
+                            <i class="bi bi-calendar-check me-2"></i>Kiestla
+                        </h2>
+                        <p class="text-muted small mb-0">Gestion moderne des présences et absences</p>
+                    </div>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div th:text="${errorMessage}">Identifiants incorrects</div>
+                    </div>
+
+                    <div th:if="${logoutMessage}" class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <div th:text="${logoutMessage}">Vous avez été déconnecté avec succès</div>
+                    </div>
+
+                    <form th:action="@{/login}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                        <div class="mb-3">
+                            <label for="login" class="form-label">Identifiant</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="login" name="login" placeholder="Entrez votre identifiant" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Mot de passe</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <small class="text-secondary">projet test fonctionnel - Groupe 7</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</html>
