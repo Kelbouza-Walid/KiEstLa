@@ -10,7 +10,7 @@ This project requires a PostgreSQL database.
    ```
 2. Run the `KiestlaApplication` main class
    ```bash
-   ./mvnw spring-boot:run
+    INITIAL_ADMIN_USERNAME=admin INITIAL_ADMIN_PASSWORD=admin ./mvnw spring-boot:run
    ```
 
 Note for Testing: The CI/CD pipeline only executes features tagged with @implemented.

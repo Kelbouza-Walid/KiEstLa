@@ -58,6 +58,8 @@ deploy-to-server:
   script:
     - echo "DB_PASSWORD=$DB_PASSWORD" > .env
     - echo "DB_ROOT_PASSWORD=$DB_ROOT_PASSWORD" >> .env
+    - echo "INITIAL_ADMIN_USERNAME=$INITIAL_ADMIN_USERNAME" >> .env
+    - echo "INITIAL_ADMIN_PASSWORD=$INITIAL_ADMIN_PASSWORD" >> .env
     - ssh $SSH_USER@172.20.128.60 "mkdir -p ~/target"
     - scp target/*.jar $SSH_USER@172.20.128.60:~/target/
     - scp Dockerfile docker-compose.yml .env $SSH_USER@172.20.128.60:~/
