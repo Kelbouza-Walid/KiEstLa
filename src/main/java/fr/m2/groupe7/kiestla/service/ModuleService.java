@@ -1,5 +1,6 @@
 package fr.m2.groupe7.kiestla.service;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -161,5 +162,15 @@ public class ModuleService {
 
         teacherToAdd.getModules().add(module);
         userRepository.save(teacherToAdd);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ModuleSummary> getModulesForStudent(String studentLogin) {
+        User student = userRepository.findModulesByLogin(studentLogin)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé : " + studentLogin));
+        return student.getModules().stream()
+                .sorted(Comparator.comparing(Module::getName))
+                .map(ModuleSummary::from)
+                .toList();
     }
 }
