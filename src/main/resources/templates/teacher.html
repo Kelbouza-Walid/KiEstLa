@@ -4,6 +4,51 @@
     <meta charset="UTF-8">
     <title>Espace enseignant</title>
 </head>
+
+<form th:action="@{/logout}" method="post" class="m-0">
+    <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+        Déconnexion
+    </button>
+</form>
+
+
+<div id="logout-error" data-testid="logout-error"
+     class="alert alert-danger d-none" role="alert"></div>
+
+<script>
+    document.getElementById('logout-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.currentTarget;
+        const button = form.querySelector('button');
+        const errorBox = document.getElementById('logout-error');
+
+        errorBox.classList.add('d-none');
+        errorBox.textContent = '';
+        button.disabled = true;
+
+        try {
+            // FormData contient le champ _csrf ajouté automatiquement par th:action
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new URLSearchParams(new FormData(form)),
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Le serveur a répondu avec le code ' + response.status + '.');
+            }
+
+            // Succès : Spring redirige vers /login?logout
+            window.location.href = response.redirected ? response.url : '/login';
+        } catch (err) {
+            errorBox.textContent = 'La déconnexion a échoué : ' + err.message + ' Veuillez réessayer.';
+            errorBox.classList.remove('d-none');
+            button.disabled = false;   // permet de réessayer
+        }
+    });
+</script>
+
 <body>
 <h1>Bienvenue dans l’espace enseignant</h1>
 
