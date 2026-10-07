@@ -7,7 +7,7 @@
     <h1 class="mb-2 text-primary" th:text="${module.name}">Module Name</h1>
     <p class="text-muted mb-4">
         Referent Teacher:
-        <strong th:text="${module.referenceTeacher != null ? module.referenceTeacher.firstName + ' ' + module.referenceTeacher.lastName : 'None'}">None</strong>
+        <strong th:text="${module.referenceTeacherName ?: 'None'}">None</strong>
     </p>
 
     <!-- Students enrolled in this module -->
@@ -22,8 +22,26 @@
                 <td th:text="${student.firstName}"></td>
                 <td th:text="${student.lastName}"></td>
             </tr>
-            <tr th:if="${#sets.isEmpty(module.students)}">
+            <tr th:if="${#lists.isEmpty(module.students)}">
                 <td colspan="2" class="text-center text-muted py-3">No students enrolled in this module.</td>
+            </tr>
+        </my_rows>
+    </div>
+
+    <!-- Teachers of this module (enrolled and reference) -->
+    <h4 class="mb-3">Teachers</h4>
+    <div th:replace="~{components :: styled_table(~{::#headersTeachers}, ~{::#rowsTeachers})}">
+        <my_headers id="headersTeachers">
+            <th>First Name</th>
+            <th>Last Name</th>
+        </my_headers>
+        <my_rows id="rowsTeachers">
+            <tr th:each="teacher : ${module.teachers}">
+                <td th:text="${teacher.firstName}"></td>
+                <td th:text="${teacher.lastName}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(module.teachers)}">
+                <td colspan="2" class="text-center text-muted py-3">No teachers assigned to this module.</td>
             </tr>
         </my_rows>
     </div>
@@ -41,7 +59,7 @@
         <my_rows id="rowsAbsences">
             <tr th:each="absence : ${absences}">
                 <td data-testid="absence-id" th:text="${absence.id}"></td>
-                <td data-testid="absence-student" th:text="${absence.student.firstName + ' ' + absence.student.lastName}"></td>
+                <td data-testid="absence-student" th:text="${absence.studentName}"></td>
                 <td data-testid="absence-date" th:text="${absence.date}"></td>
                 <td>
                     <span data-testid="absence-status"

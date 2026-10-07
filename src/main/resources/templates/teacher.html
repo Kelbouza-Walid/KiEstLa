@@ -8,8 +8,8 @@
 <h1>Bienvenue dans l’espace enseignant</h1>
 
 <h2>Mes modules</h2>
-<p th:if="${#sets.isEmpty(modules)}">Aucun module ne vous est actuellement attribué.</p>
-<ul th:unless="${#sets.isEmpty(modules)}">
+<p th:if="${#lists.isEmpty(modules)}">Aucun module ne vous est actuellement attribué.</p>
+<ul th:unless="${#lists.isEmpty(modules)}">
     <li th:each="module : ${modules}">
         <a th:href="@{/teacher/modules/{id}(id=${module.id})}" th:text="${module.name}"></a>
     </li>

@@ -1,6 +1,6 @@
 package fr.m2.groupe7.kiestla.controller;
 
-import fr.m2.groupe7.kiestla.entity.Module;
+import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
 import fr.m2.groupe7.kiestla.service.UserService;
@@ -40,13 +40,11 @@ public class TeacherController {
     public String moduleParticipants(@PathVariable Long id, Authentication authentication, Model model) {
         String teacherLogin = authentication.getName();
 
-        Module module = moduleService.verifyTeacherAccess(id, teacherLogin);
-        boolean isReferenceTeacher = moduleService.isReferenceTeacher(module, teacherLogin);
+        ModuleDetails module = moduleService.getModuleDetailsForTeacher(id, teacherLogin);
+        boolean isReferenceTeacher = moduleService.isReferenceTeacher(id, teacherLogin);
 
         model.addAttribute("module", module);
-        model.addAttribute("absences", absenceService.getAbsencesWithID(id));
-        model.addAttribute("teachers", moduleService.getEnrolledTeachers(module));
-        model.addAttribute("students", moduleService.getEnrolledStudents(module));
+        model.addAttribute("absences", absenceService.getAbsencesForModule(id));
         model.addAttribute("availableStudents", userService.getAvailableStudentsForModule(module));
 
         model.addAttribute("isReferenceTeacher", isReferenceTeacher);

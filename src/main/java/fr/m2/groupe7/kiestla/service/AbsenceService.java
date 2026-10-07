@@ -1,5 +1,7 @@
 package fr.m2.groupe7.kiestla.service;
 
+import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
+import fr.m2.groupe7.kiestla.dto.JustifyAbsenceRequest;
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
 import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
@@ -20,28 +22,34 @@ public class AbsenceService {
     }
 
     /**
-     * Retrieves all absences sorted by date in descending order.
+     * Retrieves all absences rows
      */
-    public List<Absence> getAllAbsencesSortedByDateDesc() {
-        return absenceRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
+    public List<AbsenceSummary> getAbsences() {
+        return absenceRepository.findAllByOrderByDateDesc()
+                .stream()
+                .map(AbsenceSummary::from)
+                .toList();
     }
 
     /**
-     * Retrieves all absences sorted by date in descending order.
+     * Retrieves all absences for a module of id id
      */
-    public List<Absence> getAbsencesWithID(Long id){
-        return absenceRepository.findByModuleId(id);
+    public List<AbsenceSummary> getAbsencesForModule(Long id) {
+        return absenceRepository.findByModuleId(id)
+                .stream()
+                .map(AbsenceSummary::from)
+                .toList();
     }
 
     /**
      * Adds a justification to an absence and marks its status as JUSTIFIED.
      */
     @Transactional
-    public void justifyAbsence(Long id, String justificationText) {
+    public void justifyAbsence(Long id, JustifyAbsenceRequest justificationReq) {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
-        
-        absence.setJustification(justificationText);
+
+        absence.setJustification(justificationReq.justification());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
     }
 
@@ -53,7 +61,7 @@ public class AbsenceService {
     public void unjustifyAbsence(Long id) {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
-                
+
         absence.setJustification(null);
         absence.setStatus(AbsenceStatus.UNJUSTIFIED);
     }
