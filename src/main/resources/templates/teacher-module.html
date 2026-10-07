@@ -11,16 +11,16 @@
 <p th:if="${errorMessage}" th:text="${errorMessage}"></p>
 
 <h2>Étudiants</h2>
-<p th:if="${#lists.isEmpty(students)}">Aucun étudiant n’est inscrit à ce module.</p>
-<ul th:unless="${#lists.isEmpty(students)}">
-    <li th:each="student : ${students}"
+<p th:if="${#lists.isEmpty(module.students)}">Aucun étudiant n’est inscrit à ce module.</p>
+<ul th:unless="${#lists.isEmpty(module.students)}">
+    <li th:each="student : ${module.students}"
         th:text="${student.firstName + ' ' + student.lastName}"></li>
 </ul>
 
 <h2>Professeurs</h2>
-<p th:if="${#lists.isEmpty(teachers)}">Aucun professeur n’est associé à ce module.</p>
-<ul th:unless="${#lists.isEmpty(teachers)}">
-    <li th:each="teacher : ${teachers}"
+<p th:if="${#lists.isEmpty(module.teachers)}">Aucun professeur n’est associé à ce module.</p>
+<ul th:unless="${#lists.isEmpty(module.teachers)}">
+    <li th:each="teacher : ${module.teachers}"
         th:text="${teacher.firstName + ' ' + teacher.lastName}"></li>
 </ul>
 
@@ -69,7 +69,7 @@
     <tbody>
     <tr th:each="absence : ${absences}">
         <td th:text="${absence.date}"></td>
-        <td th:text="${absence.student.firstName + ' ' + absence.student.lastName}"></td>
+        <td th:text="${absence.studentName}"></td>
         <td th:text="${absence.status}"></td>
         <td th:text="${absence.justification != null ? absence.justification : '-'}"></td>
     </tr>

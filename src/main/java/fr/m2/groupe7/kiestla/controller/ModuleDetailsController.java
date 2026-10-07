@@ -1,7 +1,7 @@
 package fr.m2.groupe7.kiestla.controller;
 
-import fr.m2.groupe7.kiestla.entity.Absence;
-import fr.m2.groupe7.kiestla.entity.Module;
+import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
+import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
 import org.springframework.stereotype.Controller;
@@ -35,8 +35,8 @@ public class ModuleDetailsController {
      */
     @GetMapping("/{id}")
     public String index(@PathVariable Long id, Model model) {
-        Module module = moduleService.getModuleWithStudentsById(id);
-        List<Absence> absences = absenceService.getAbsencesWithID(id);
+        ModuleDetails module = moduleService.getModuleDetails(id);
+        List<AbsenceSummary> absences = absenceService.getAbsencesForModule(id);
 
         model.addAttribute("module", module);
         model.addAttribute("absences", absences);

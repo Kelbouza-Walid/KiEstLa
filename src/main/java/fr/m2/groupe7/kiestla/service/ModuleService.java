@@ -1,15 +1,14 @@
 package fr.m2.groupe7.kiestla.service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
+import fr.m2.groupe7.kiestla.dto.ModuleSummary;
+import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
@@ -27,47 +26,65 @@ public class ModuleService {
         this.userRepository = userRepository;
     }
 
-    public List<Module> getAllModules() {
-        return moduleRepository.findAll();
+    /**
+     * Returns all a ModuleSummary for every module.
+     */
+    @Transactional(readOnly = true)
+    public List<ModuleSummary> getAllModulesSummary() {
+        return moduleRepository.findAll()
+                .stream()
+                .map(ModuleSummary::from)
+                .toList();
     }
 
-    public Optional<Module> getModuleById(Long id) {
-        return moduleRepository.findById(id);
-    }
-
-    public Module getModuleWithStudentsById(Long id) {
+    /**
+     * Returns the Module details of a module given it's id.
+     *
+     * @trows ResourceNotFoundException if the module does not exist
+     */
+    @Transactional(readOnly = true)
+    public ModuleDetails getModuleDetails(Long id) {
         return moduleRepository.findWithStudentsById(id)
+                .map(ModuleDetails::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + id));
     }
 
-    public boolean isReferenceTeacher(Module module, String login) {
+    /**
+     * Same as getModuleDetails, but first checks that teacherLogin may access the
+     * module (assigned or reference teacher).
+     *
+     * @throws ResourceNotFoundException if the user or module does not exist
+     * @throws BusinessException         if the teacher has no access to the module
+     */
+    @Transactional(readOnly = true)
+    public ModuleDetails getModuleDetailsForTeacher(Long moduleId, String teacherLogin) {
+        return ModuleDetails.from(verifyTeacherAccess(moduleId, teacherLogin));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isReferenceTeacher(Long moduleId, String login) {
+        return moduleRepository.findById(moduleId)
+                .map(module -> isReferenceTeacher(module, login))
+                .orElse(false);
+    }
+
+    private boolean isReferenceTeacher(Module module, String login) {
         return module.getReferenceTeacher() != null
                 && module.getReferenceTeacher().getLogin().equals(login);
     }
 
-    public List<User> getEnrolledStudents(Module module) {
-        return module.getStudents().stream()
-                .filter(user -> user.getRole() == Role.STUDENT)
-                .toList();
-    }
-
-    public List<User> getEnrolledTeachers(Module module) {
-        List<User> moduleTeachers = new ArrayList<>(module.getStudents().stream()
-                .filter(user -> user.getRole() == Role.TEACHER)
-                .toList());
-        if (module.getReferenceTeacher() != null
-                && moduleTeachers.stream()
-                        .noneMatch(user -> user.getId().equals(module.getReferenceTeacher().getId()))) {
-            moduleTeachers.add(module.getReferenceTeacher());
-        }
-        return moduleTeachers;
-    }
-
+    /**
+     * Returns a ModuleSummary for every modules of a teacher.
+     *
+     * @throws ResourceNotFoundException if the user or module does not exist
+     */
     @Transactional(readOnly = true)
-    public Set<Module> getModulesForTeacher(String teacherLogin) {
+    public List<ModuleSummary> getModulesForTeacher(String teacherLogin) {
         User teacher = userRepository.findModulesByLogin(teacherLogin)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé : " + teacherLogin));
-        return teacher.getModules();
+        return teacher.getModules().stream()
+                .map(ModuleSummary::from)
+                .toList();
     }
 
     /**
@@ -79,8 +96,7 @@ public class ModuleService {
      * @throws ResourceNotFoundException if the user or module does not exist
      * @throws BusinessException         if the teacher has no access to the module
      */
-    @Transactional(readOnly = true)
-    public Module verifyTeacherAccess(Long moduleId, String teacherLogin) {
+    private Module verifyTeacherAccess(Long moduleId, String teacherLogin) {
         User teacher = userRepository.findModulesByLogin(teacherLogin)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé : " + teacherLogin));
 

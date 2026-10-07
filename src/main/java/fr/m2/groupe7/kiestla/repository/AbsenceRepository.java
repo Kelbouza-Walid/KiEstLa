@@ -13,11 +13,19 @@ import java.util.List;
  */
 @Repository
 public interface AbsenceRepository extends JpaRepository<Absence, Long> {
-    List<Absence> findByStudentId(Long studentId);
-    List<Absence> findByModuleId(Long moduleId);
-    @EntityGraph(attributePaths = "student")
-    List<Absence> findByModuleIdOrderByDateDesc(Long moduleId);
-    List<Absence> findByStatus(AbsenceStatus status);
-    List<Absence> findByStudentIdAndModuleId(Long studentId, Long moduleId);
-    List<Absence> findByStudentIdAndStatus(Long studentId, AbsenceStatus status);
+	List<Absence> findByStudentId(Long studentId);
+
+	List<Absence> findByModuleId(Long moduleId);
+
+	@EntityGraph(attributePaths = "student")
+	List<Absence> findByModuleIdOrderByDateDesc(Long moduleId);
+
+	List<Absence> findByStatus(AbsenceStatus status);
+
+	List<Absence> findByStudentIdAndModuleId(Long studentId, Long moduleId);
+
+	List<Absence> findByStudentIdAndStatus(Long studentId, AbsenceStatus status);
+
+	@EntityGraph(attributePaths = "student")
+	List<Absence> findAllByOrderByDateDesc();
 }
