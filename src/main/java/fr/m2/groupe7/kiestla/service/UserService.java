@@ -1,6 +1,7 @@
 package fr.m2.groupe7.kiestla.service;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
@@ -18,6 +19,13 @@ public class UserService {
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminUserSummary> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(AdminUserSummary::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

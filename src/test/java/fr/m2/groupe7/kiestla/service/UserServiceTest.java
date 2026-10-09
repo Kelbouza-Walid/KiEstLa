@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
@@ -28,6 +29,18 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    @Test
+    void getAllUsers() {
+        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
+        admin.setPassword("hashed-password");
+        when(userRepository.findAll()).thenReturn(List.of(admin));
+
+        List<AdminUserSummary> result = userService.getAllUsers();
+
+        assertEquals(List.of(new AdminUserSummary(1L, "System", "Admin", "admin", Role.ADMIN)), result);
+        verify(userRepository).findAll();
+    }
 
     @Test
     void getAvailableStudentsForModule_basic() {

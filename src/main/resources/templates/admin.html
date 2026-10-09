@@ -2,7 +2,39 @@
 <html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
 
 <section>
-    <h1 class="mb-4 text-primary">Admin Dashboard</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="m-0 text-primary">Admin Dashboard</h1>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                Déconnexion
+            </button>
+        </form>
+    </div>
+
+    <h2 class="mb-3 text-primary">All Users</h2>
+    <div th:replace="~{components :: styled_table(~{::#user-headers}, ~{::#user-rows})}">
+        <my_headers id="user-headers">
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Login</th>
+            <th>Role</th>
+        </my_headers>
+        <my_rows id="user-rows">
+            <tr th:each="user : ${users}">
+                <td data-testid="user-id" th:text="${user.id}"></td>
+                <td data-testid="user-first-name" th:text="${user.firstName}"></td>
+                <td data-testid="user-last-name" th:text="${user.lastName}"></td>
+                <td data-testid="user-login" th:text="${user.login}"></td>
+                <td>
+                    <span class="badge bg-secondary" data-testid="user-role" th:text="${user.role}"></span>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(users)}">
+                <td colspan="5" class="text-center text-muted py-3">No users found in the database.</td>
+            </tr>
+        </my_rows>
+    </div>
 </section>
 
 </html>
