@@ -3,6 +3,7 @@ package fr.m2.groupe7.kiestla.service;
 import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
 import fr.m2.groupe7.kiestla.dto.JustifyAbsenceRequest;
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.StudentAbsenceSummary;
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
 import fr.m2.groupe7.kiestla.entity.Module;
@@ -109,5 +110,13 @@ public class AbsenceService {
         absence.setModule(moduleEntity);
         absence.setDate(date);
         absenceRepository.save(absence);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentAbsenceSummary> getAbsencesForStudent(String studentLogin) {
+        return absenceRepository.findByStudentLoginOrderByDateDesc(studentLogin)
+                .stream()
+                .map(StudentAbsenceSummary::from)
+                .toList();
     }
 }
