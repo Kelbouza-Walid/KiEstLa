@@ -5,6 +5,7 @@ import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
 import fr.m2.groupe7.kiestla.service.UserService;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDate;
 
 @Controller
 public class TeacherController {
@@ -77,6 +80,19 @@ public class TeacherController {
 
         moduleService.assignTeacher(id, teacherId, authentication.getName());
         redirectAttributes.addFlashAttribute("successMessage", "Le professeur a été ajouté au module.");
+        return "redirect:/teacher/modules/" + id;
+    }
+
+    @PostMapping("/teacher/modules/{id}/absences")
+    public String addAbsence(
+            @PathVariable Long id,
+            @RequestParam Long absentStudentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        absenceService.addAbsence(id, absentStudentId, date, authentication.getName());
+        redirectAttributes.addFlashAttribute("successMessage", "L'absence a été ajoutée.");
         return "redirect:/teacher/modules/" + id;
     }
 }

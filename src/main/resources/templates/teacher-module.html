@@ -56,6 +56,20 @@
 
 
 <h2>Absences</h2>
+<h2>Ajouter une absence</h2>
+<p th:if="${#lists.isEmpty(module.students)}">pas d'étudiant inscrit : impossible dajotuer une absence</p>
+<form th:unless="${#lists.isEmpty(module.students)}"
+      th:action="@{/teacher/modules/{id}/absences(id=${module.id})}" method="post">
+    <label for="absentStudentId">etudiant :</label>
+    <select id="absentStudentId" name="absentStudentId" data-testid="select-absence-student" required>
+        <option th:each="student : ${module.students}"
+                th:value="${student.id}"
+                th:text="${student.firstName + ' ' + student.lastName}"></option>
+    </select>
+    <label for="absenceDate">Date :</label>
+    <input type="date" id="absenceDate" name="date" data-testid="input-absence-date" required />
+    <button type="submit" data-testid="btn-add-absence">Ajouter labsence</button>
+</form>
 <p th:if="${#lists.isEmpty(absences)}">Aucune absence enregistrée pour ce module.</p>
 <table th:unless="${#lists.isEmpty(absences)}">
     <thead>

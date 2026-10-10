@@ -4,8 +4,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.UserSummary;
+import fr.m2.groupe7.kiestla.exception.BusinessException;
+import fr.m2.groupe7.kiestla.repository.ModuleRepository;
+import fr.m2.groupe7.kiestla.repository.UserRepository;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,6 +22,7 @@ import fr.m2.groupe7.kiestla.dto.JustifyAbsenceRequest;
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
 import fr.m2.groupe7.kiestla.entity.User;
+import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 
@@ -29,6 +37,15 @@ class AbsenceServiceTest {
 
     @Mock
     private AbsenceRepository absenceRepository;
+
+    @Mock
+    private ModuleRepository moduleRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private ModuleService moduleService;
 
     @InjectMocks
     private AbsenceService absenceService;
@@ -109,8 +126,77 @@ class AbsenceServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> absenceService.unjustifyAbsence(99L));
     }
 
+    // ---------- addAbsence (ticket TFKIES26-87 ) ----------
+
+    @Test
+    void addAbsence_basic() {
+        when(moduleService.getModuleDetailsForTeacher(10L, "teacher"))
+                .thenReturn(moduleWithStudent(10L, 5L));
+
+        User student = new User();
+        student.setId(5L);
+        Module module = new Module();
+        module.setId(10L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(student));
+        when(moduleRepository.findById(10L)).thenReturn(Optional.of(module));
+
+        LocalDate date = LocalDate.of(2026, 10, 12);
+        absenceService.addAbsence(10L, 5L, date, "teacher");
+
+        ArgumentCaptor<Absence> captor = ArgumentCaptor.forClass(Absence.class);
+        verify(absenceRepository).save(captor.capture());
+        Absence saved = captor.getValue();
+        assertSame(student, saved.getStudent());
+        assertSame(module, saved.getModule());
+        assertEquals(date, saved.getDate());
+        assertEquals(AbsenceStatus.UNJUSTIFIED, saved.getStatus());
+    }
+
+    @Test
+    void addAbsence_studentNotEnrolled() {
+        // The module has no student at all
+        when(moduleService.getModuleDetailsForTeacher(10L, "teacher"))
+                .thenReturn(new ModuleDetails(10L, "Test fonctionnel", null, List.of(), List.of()));
+
+        assertThrows(BusinessException.class,
+                () -> absenceService.addAbsence(10L, 5L, LocalDate.of(2026, 10, 12), "teacher"));
+
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void addAbsence_teacherHasNoAccess() {
+        when(moduleService.getModuleDetailsForTeacher(10L, "intruder"))
+                .thenThrow(new BusinessException("Vous n'êtes pas autorisé à accéder à ce module"));
+
+        assertThrows(BusinessException.class,
+                () -> absenceService.addAbsence(10L, 5L, LocalDate.of(2026, 10, 12), "intruder"));
+
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void addAbsence_studentNotFound() {
+        when(moduleService.getModuleDetailsForTeacher(10L, "teacher"))
+                .thenReturn(moduleWithStudent(10L, 5L));
+        when(userRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> absenceService.addAbsence(10L, 5L, LocalDate.of(2026, 10, 12), "teacher"));
+
+        verify(absenceRepository, never()).save(any());
+    }
+
+    // ---------- helpers ----------
+
+    private ModuleDetails moduleWithStudent(Long moduleId, Long studentId) {
+        return new ModuleDetails(moduleId, "Test fonctionnel", null,
+                List.of(new UserSummary(studentId, "Noam", "Faivre", "nfaivre")),
+                List.of());
+    }
+
     private Absence createAbsence(Long id, String firstName, String lastName, LocalDate date, AbsenceStatus status,
-            String justification) {
+                                  String justification) {
         User student = new User();
         student.setFirstName(firstName);
         student.setLastName(lastName);
