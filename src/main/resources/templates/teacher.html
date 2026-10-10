@@ -1,63 +1,35 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Espace enseignant</title>
-</head>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
 
-<form th:action="@{/logout}" method="post" class="m-0">
-    <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
-        Déconnexion
-    </button>
-</form>
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="m-0 text-primary">Mes modules</h1>
+        </div>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                Déconnexion
+            </button>
+        </form>
+    </div>
 
+    <div th:replace="~{components :: styled_table(~{::#module-headers}, ~{::#module-rows})}">
+        <my_headers id="module-headers">
+            <th>Module</th>
+            <th>Enseignant référent</th>
+        </my_headers>
+        <my_rows id="module-rows">
+            <tr th:each="module : ${modules}" data-testid="teacher-module"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
+                <td th:text="${module.name}"></td>
+                <td th:text="${module.referenceTeacherLastName ?: 'Aucun'}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(modules)}">
+                <td colspan="2" class="text-center text-muted py-3">Aucun module ne vous est actuellement attribué.</td>
+            </tr>
+        </my_rows>
+    </div>
+</section>
 
-<div id="logout-error" data-testid="logout-error"
-     class="alert alert-danger d-none" role="alert"></div>
-
-<script>
-    document.getElementById('logout-form').addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const form = e.currentTarget;
-        const button = form.querySelector('button');
-        const errorBox = document.getElementById('logout-error');
-
-        errorBox.classList.add('d-none');
-        errorBox.textContent = '';
-        button.disabled = true;
-
-        try {
-            // FormData contient le champ _csrf ajouté automatiquement par th:action
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: new URLSearchParams(new FormData(form)),
-                credentials: 'same-origin'
-            });
-
-            if (!response.ok) {
-                throw new Error('Le serveur a répondu avec le code ' + response.status + '.');
-            }
-
-            // Succès : Spring redirige vers /login?logout
-            window.location.href = response.redirected ? response.url : '/login';
-        } catch (err) {
-            errorBox.textContent = 'La déconnexion a échoué : ' + err.message + ' Veuillez réessayer.';
-            errorBox.classList.remove('d-none');
-            button.disabled = false;   // permet de réessayer
-        }
-    });
-</script>
-
-<body>
-<h1>Bienvenue dans l’espace enseignant</h1>
-
-<h2>Mes modules</h2>
-<p th:if="${#lists.isEmpty(modules)}">Aucun module ne vous est actuellement attribué.</p>
-<ul th:unless="${#lists.isEmpty(modules)}">
-    <li th:each="module : ${modules}">
-        <a th:href="@{/module-details/{id}(id=${module.id})}" th:text="${module.name}"></a>
-    </li>
-</ul>
-</body>
 </html>

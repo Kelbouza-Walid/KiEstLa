@@ -2,7 +2,14 @@
 <html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
 
 <section>
-    <h1 class="mb-4 text-primary">My Modules</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="m-0 text-primary">My Modules</h1>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                Déconnexion
+            </button>
+        </form>
+    </div>
 
     <div th:replace="~{components :: styled_table(~{::#headers1}, ~{::#rows1})}">
         <my_headers id="headers1">
