@@ -56,7 +56,7 @@
 <p th:if="${#lists.isEmpty(modules)}">Aucun module ne vous est actuellement attribué.</p>
 <ul th:unless="${#lists.isEmpty(modules)}">
     <li th:each="module : ${modules}">
-        <a th:href="@{/teacher/modules/{id}(id=${module.id})}" th:text="${module.name}"></a>
+        <a th:href="@{/module-details/{id}(id=${module.id})}" th:text="${module.name}"></a>
     </li>
 </ul>
 </body>

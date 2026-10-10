@@ -1,9 +1,7 @@
 package fr.m2.groupe7.kiestla.controller;
 
-import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
-import fr.m2.groupe7.kiestla.service.UserService;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
@@ -20,15 +18,12 @@ import java.time.LocalDate;
 @Controller
 public class TeacherController {
 
-    private final UserService userService;
     private final ModuleService moduleService;
     private final AbsenceService absenceService;
 
     public TeacherController(
-            UserService userService,
             ModuleService moduleService,
             AbsenceService absenceService) {
-        this.userService = userService;
         this.moduleService = moduleService;
         this.absenceService = absenceService;
     }
@@ -37,26 +32,6 @@ public class TeacherController {
     public String teacherPage(Authentication authentication, Model model) {
         model.addAttribute("modules", moduleService.getModulesForTeacher(authentication.getName()));
         return "teacher";
-    }
-
-    @GetMapping("/teacher/modules/{id}")
-    public String moduleParticipants(@PathVariable Long id, Authentication authentication, Model model) {
-        String teacherLogin = authentication.getName();
-
-        ModuleDetails module = moduleService.getModuleDetailsForTeacher(id, teacherLogin);
-        boolean isReferenceTeacher = moduleService.isReferenceTeacher(id, teacherLogin);
-
-        model.addAttribute("module", module);
-        model.addAttribute("absences", absenceService.getAbsencesForModule(id));
-        model.addAttribute("availableStudents", userService.getAvailableStudentsForModule(module));
-
-        model.addAttribute("isReferenceTeacher", isReferenceTeacher);
-        if (isReferenceTeacher) {
-            model.addAttribute("availableTeachers", userService.getAvailableTeachersForModule(module));
-        }
-
-        return "teacher-module";
-
     }
 
     @PostMapping("/teacher/modules/{id}/students")
@@ -68,7 +43,7 @@ public class TeacherController {
 
         moduleService.enrollStudent(id, studentId, authentication.getName());
         redirectAttributes.addFlashAttribute("successMessage", "L’étudiant a été ajouté au module.");
-        return "redirect:/teacher/modules/" + id;
+        return "redirect:/module-details/" + id;
     }
 
     @PostMapping("/teacher/modules/{id}/teachers")
@@ -80,7 +55,7 @@ public class TeacherController {
 
         moduleService.assignTeacher(id, teacherId, authentication.getName());
         redirectAttributes.addFlashAttribute("successMessage", "Le professeur a été ajouté au module.");
-        return "redirect:/teacher/modules/" + id;
+        return "redirect:/module-details/" + id;
     }
 
     @PostMapping("/teacher/modules/{id}/absences")
@@ -93,6 +68,6 @@ public class TeacherController {
 
         absenceService.addAbsence(id, absentStudentId, date, authentication.getName());
         redirectAttributes.addFlashAttribute("successMessage", "L'absence a été ajoutée.");
-        return "redirect:/teacher/modules/" + id;
+        return "redirect:/module-details/" + id;
     }
 }

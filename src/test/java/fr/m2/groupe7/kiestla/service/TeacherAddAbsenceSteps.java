@@ -74,7 +74,7 @@ public class TeacherAddAbsenceSteps {
 
     @When("I select the absent student")
     public void i_select_the_absent_student() {
-        getPage().navigate(BASE_URL + "/teacher/modules/" + module.getId());
+        getPage().navigate(BASE_URL + "/module-details/" + module.getId());
         getPage().getByTestId("select-absence-student").selectOption(String.valueOf(student.getId()));
     }
 
