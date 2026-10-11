@@ -4,7 +4,6 @@ Feature: Create a new absence
   
 Background: I have already logged in
 
-@implemented
 Scenario: Adding a new absence without a comment
   Given The absent student is registered in the module I teach
   When I select the absent student

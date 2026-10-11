@@ -17,7 +17,9 @@
             <th>Referent Teacher</th>
         </my_headers>
         <my_rows id="rows1">
-            <tr th:each="module : ${modules}" data-testid="student-module">
+            <tr th:each="module : ${modules}" data-testid="student-module"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
                 <td data-testid="module-name" th:text="${module.name}"></td>
                 <td data-testid="module-teacher" th:text="${module.referenceTeacherLastName ?: 'None'}"></td>
             </tr>
