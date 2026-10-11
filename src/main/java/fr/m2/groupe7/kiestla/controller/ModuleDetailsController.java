@@ -44,18 +44,27 @@ public class ModuleDetailsController {
     public String index(@PathVariable Long id, Authentication authentication, Model model) {
         boolean isTeacher = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_TEACHER"));
+        boolean isSecretary = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SECRETARY"));
+        boolean isStudent = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_STUDENT"));
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_Admin"));
         ModuleDetails module = isTeacher
                 ? moduleService.getModuleDetailsForTeacher(id, authentication.getName())
                 : moduleService.getModuleDetails(id);
         boolean isReferenceTeacher = isTeacher
                 && moduleService.isReferenceTeacher(id, authentication.getName());
-        List<AbsenceSummary> absences = absenceService.getAbsencesForModule(id);
+        List<AbsenceSummary> absences = isStudent
+                ? List.of()
+                : absenceService.getAbsencesForModule(id);
 
         model.addAttribute("module", module);
         model.addAttribute("absences", absences);
+        model.addAttribute("isStudent", isStudent);
         model.addAttribute("isTeacher", isTeacher);
         model.addAttribute("isReferenceTeacher", isReferenceTeacher);
-        model.addAttribute("backUrl", isTeacher ? "/teacher" : "/secretary");
+        model.addAttribute("backUrl", isTeacher ? "/teacher" : isSecretary? "/secretary" : isAdmin? "/admin" : "/student");
         if (isTeacher) {
             model.addAttribute("availableStudents", userService.getAvailableStudentsForModule(module));
             if (isReferenceTeacher) {

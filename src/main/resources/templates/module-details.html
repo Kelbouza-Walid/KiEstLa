@@ -90,32 +90,34 @@
     </div>
 
     <!-- Absences for this module -->
-    <h4 class="mb-3">Absences</h4>
-    <div th:replace="~{components :: styled_table(~{::#headersAbsences}, ~{::#rowsAbsences})}">
-        <my_headers id="headersAbsences">
-            <th>ID</th>
-            <th>Student</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Justification</th>
-        </my_headers>
-        <my_rows id="rowsAbsences">
-            <tr th:each="absence : ${absences}">
-                <td data-testid="absence-id" th:text="${absence.id}"></td>
-                <td data-testid="absence-student" th:text="${absence.studentName}"></td>
-                <td data-testid="absence-date" th:text="${absence.date}"></td>
-                <td>
-                    <span data-testid="absence-status"
-                          th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
-                          th:text="${absence.status}"></span>
-                </td>
-                <td data-testid="absence-justification" th:text="${absence.justification}"></td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(absences)}">
-                <td colspan="5" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
-            </tr>
-        </my_rows>
-    </div>
+    <th:block th:unless="${isStudent}">
+        <h4 class="mb-3">Absences</h4>
+        <div th:replace="~{components :: styled_table(~{::#headersAbsences}, ~{::#rowsAbsences})}">
+            <my_headers id="headersAbsences">
+                <th>ID</th>
+                <th>Student</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Justification</th>
+            </my_headers>
+            <my_rows id="rowsAbsences">
+                <tr th:each="absence : ${absences}">
+                    <td data-testid="absence-id" th:text="${absence.id}"></td>
+                    <td data-testid="absence-student" th:text="${absence.studentName}"></td>
+                    <td data-testid="absence-date" th:text="${absence.date}"></td>
+                    <td>
+                        <span data-testid="absence-status"
+                              th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
+                              th:text="${absence.status}"></span>
+                    </td>
+                    <td data-testid="absence-justification" th:text="${absence.justification}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(absences)}">
+                    <td colspan="5" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
+                </tr>
+            </my_rows>
+        </div>
+    </th:block>
 
     <div th:if="${isTeacher}" class="card shadow-sm mb-4">
         <div class="card-body">
