@@ -3,6 +3,7 @@ package fr.m2.groupe7.kiestla.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
+import fr.m2.groupe7.kiestla.dto.AddCommentRequest;
 import fr.m2.groupe7.kiestla.dto.JustifyAbsenceRequest;
 import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
@@ -56,6 +58,32 @@ public class SecretaryController {
             RedirectAttributes redirectAttributes) {
         absenceService.unjustifyAbsence(id);
         redirectAttributes.addFlashAttribute("successMessage", "La justification de l'absence a été retirée.");
+        return "redirect:/secretary";
+    }
+
+    /**
+     * Returns the comment list of an absence, as an HTML fragment loaded into the comments panel.
+     */
+    @GetMapping("/absence/{id}/comments")
+    public String comments(@PathVariable Long id, Model model) {
+        model.addAttribute("comments", absenceService.getCommentsForAbsence(id));
+        return "components :: comment_list";
+    }
+
+    @PostMapping("/absence/{id}/comments")
+    public String addComment(
+            @PathVariable Long id,
+            @Valid @ModelAttribute AddCommentRequest commentReq,
+            BindingResult bindingResult,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("openCommentsFor", id);
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("commentErrorMessage",
+                    "Le commentaire ne peut pas être vide (2000 caractères maximum).");
+            return "redirect:/secretary";
+        }
+        absenceService.addComment(id, authentication.getName(), commentReq);
         return "redirect:/secretary";
     }
 

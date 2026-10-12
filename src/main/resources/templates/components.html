@@ -16,4 +16,39 @@
         </div>
     </div>
 </div>
+
+<!--
+    Comments side panel for absences.
+    Opened by any button with data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" data-absence-id="...".
+    baseUrl: absence endpoint prefix (e.g. /secretary/absence), comments are at {baseUrl}/{id}/comments
+    openFor: absence id whose panel is reopened on page load (after posting a comment), or null
+    errorMessage: comment validation error to display, or null
+-->
+<div th:fragment="comments_panel(baseUrl, openFor, errorMessage)" class="offcanvas offcanvas-end" tabindex="-1"
+     id="commentsPanel" data-testid="comments-panel" th:data-base-url="${baseUrl}" th:data-open-for="${openFor}">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Comments</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+        <div id="comments-body" class="flex-grow-1 overflow-auto"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger mt-3 mb-0" role="alert"
+             data-testid="comment-error" th:text="${errorMessage}"></div>
+        <form id="comment-form" method="post" class="mt-3">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <textarea name="comment" data-testid="input-comment" class="form-control mb-2" rows="3" maxlength="2000" placeholder="Write a comment..."></textarea>
+            <button type="submit" data-testid="btn-save-comment" class="btn btn-primary w-100">Add comment</button>
+        </form>
+    </div>
+    <script th:src="@{/js/comments-panel.js}" defer></script>
+</div>
+
+<!-- Comment list of an absence, loaded into the comments panel -->
+<div th:fragment="comment_list">
+    <p th:if="${#lists.isEmpty(comments)}" class="text-muted" data-testid="no-comments">No comments yet.</p>
+    <div th:each="c : ${comments}" class="border-bottom py-2" data-testid="absence-comment">
+        <strong data-testid="comment-author" th:text="${c.userFirstName + ' ' + c.userLastName}"></strong>
+        <p class="mb-0" data-testid="comment-text" th:text="${c.comment}" style="white-space: pre-wrap;"></p>
+    </div>
+</div>
 </html>

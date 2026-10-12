@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
@@ -19,10 +20,12 @@ import com.microsoft.playwright.Page;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
+import fr.m2.groupe7.kiestla.entity.Comment;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
+import fr.m2.groupe7.kiestla.repository.CommentRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
@@ -36,6 +39,9 @@ public class SecretaryAbsenceSteps {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     private Long currentAbsenceId;
 
@@ -176,5 +182,78 @@ public class SecretaryAbsenceSteps {
         assertEquals(AbsenceStatus.UNJUSTIFIED, updated.getStatus());
         assertNull(updated.getMotiveTitle());
         assertNull(updated.getMotiveDescription());
+    }
+
+    // --- Scenario: Adding a comment to an absence (1171) ---
+
+    @Given("The absence has no comment from me")
+    public void the_absence_has_no_comment_from_me() {
+        absenceRepository.deleteAll();
+
+        User student = new User();
+        student.setFirstName("Gaspard");
+        student.setLastName("Quentin");
+        student.setLogin("gquentin");
+        student.setPassword("pwd");
+        student.setRole(Role.STUDENT);
+        student = userRepository.save(student);
+
+        Module module = new Module();
+        module.setName("Functionnal testing");
+        moduleRepository.save(module);
+
+        Absence absence = new Absence();
+        absence.setStudent(student);
+        absence.setModule(module);
+        absence.setDate(LocalDate.now());
+        absence.setStatus(AbsenceStatus.UNJUSTIFIED);
+        Absence saved = absenceRepository.save(absence);
+
+        this.currentAbsenceId = saved.getId();
+    }
+
+    @When("I write a comment")
+    public void i_write_a_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+        getPage().getByTestId("input-comment").fill("Called the parents");
+    }
+
+    @When("I save the comment")
+    public void i_save_the_comment() {
+        getPage().getByTestId("btn-save-comment").click();
+    }
+
+    @Then("The comment is displayed on the absence")
+    public void the_comment_is_displayed_on_the_absence() {
+        assertThat(getPage().getByTestId("comment-author")).hasText("FirstName LastName");
+        assertThat(getPage().getByTestId("comment-text")).hasText("Called the parents");
+
+        List<Comment> comments = commentRepository.findByAbsenceIdOrderByDateAsc(currentAbsenceId);
+        assertEquals(1, comments.size());
+        assertEquals("Called the parents", comments.get(0).getComment());
+        assertEquals("secretary", comments.get(0).getCommenter().getLogin());
+    }
+
+    // --- Scenario: Attempting to save an empty comment (1186) ---
+
+    @When("I try to save an empty comment")
+    public void i_try_to_save_an_empty_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+        getPage().getByTestId("input-comment").fill("   ");
+        getPage().getByTestId("btn-save-comment").click();
+    }
+
+    @Then("The comment is not saved")
+    public void the_comment_is_not_saved() {
+        assertThat(getPage().getByTestId("no-comments")).isVisible();
+        assertEquals(0, commentRepository.findByAbsenceIdOrderByDateAsc(currentAbsenceId).size());
+    }
+
+    @Then("I see an error message indicating the comment cannot be empty")
+    public void i_see_an_error_message_indicating_the_comment_cannot_be_empty() {
+        assertThat(getPage().getByTestId("comment-error"))
+                .hasText("Le commentaire ne peut pas être vide (2000 caractères maximum).");
     }
 }
