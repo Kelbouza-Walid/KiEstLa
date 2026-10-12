@@ -39,6 +39,9 @@ public class SecretaryAbsenceSteps {
 
     private Long currentAbsenceId;
 
+    // Only set once the justification form has been opened (not the case for an already justified absence)
+    private boolean motiveFormOpened = false;
+
     private Page getPage() {
         return PlaywrightHooks.getPage();
     }
@@ -96,13 +99,16 @@ public class SecretaryAbsenceSteps {
     public void i_enter_the_motive_for_the_absence() {
         getPage().navigate("http://localhost:8080/secretary");
         getPage().getByTestId("btn-add-justification").click();
-        getPage().getByTestId("input-justification-text").fill("Lazy");
+        getPage().getByTestId("input-motive-title").fill("Sick");
+        motiveFormOpened = true;
     }
 
     @When("I add a corresponding description")
     public void i_add_a_corresponding_description() {
-        // TODO: implement this
-        // throw new PendingException();
+        if (!motiveFormOpened) {
+            return;
+        }
+        getPage().getByTestId("input-motive-description").fill("Caught a cold");
     }
 
     @When("I set the absence as justified")
@@ -113,10 +119,13 @@ public class SecretaryAbsenceSteps {
     @Then("The absence is registered as justified")
     public void the_absence_is_registered_as_justified() {
         assertThat(getPage().getByTestId("absence-status")).hasText("JUSTIFIED");
-        assertThat(getPage().getByTestId("absence-justification")).hasText("Lazy");
+        assertThat(getPage().getByTestId("absence-motive-title")).hasText("Sick");
+        assertThat(getPage().getByTestId("absence-motive-description")).hasText("Caught a cold");
 
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.JUSTIFIED, updated.getStatus());
+        assertEquals("Sick", updated.getMotiveTitle());
+        assertEquals("Caught a cold", updated.getMotiveDescription());
     }
 
     // --- Scenario: Changing a justified absence to unjustified (1184) ---
@@ -142,7 +151,8 @@ public class SecretaryAbsenceSteps {
         absence.setModule(module);
         absence.setDate(LocalDate.now());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
-        absence.setJustification("Medical thing");
+        absence.setMotiveTitle("Medical");
+        absence.setMotiveDescription("Medical thing");
         Absence saved = absenceRepository.save(absence);
 
         this.currentAbsenceId = saved.getId();
@@ -164,6 +174,7 @@ public class SecretaryAbsenceSteps {
         assertThat(getPage().getByTestId("absence-status")).hasText("UNJUSTIFIED");
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.UNJUSTIFIED, updated.getStatus());
-        assertNull(updated.getJustification());
+        assertNull(updated.getMotiveTitle());
+        assertNull(updated.getMotiveDescription());
     }
 }

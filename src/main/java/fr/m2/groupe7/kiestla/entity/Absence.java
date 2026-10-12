@@ -29,7 +29,10 @@ public class Absence {
     @Column(nullable = false)
     private AbsenceStatus status = AbsenceStatus.UNJUSTIFIED;
 
+    @Column(length = 100)
+    private String motiveTitle;
+
     @Column(length = 2000)
-    private String justification;
+    private String motiveDescription;
 
 }

@@ -59,19 +59,20 @@ public class AbsenceService {
     }
 
     /**
-     * Adds a justification to an absence and marks its status as JUSTIFIED.
+     * Adds a motive (title and description) to an absence and marks its status as JUSTIFIED.
      */
     @Transactional
     public void justifyAbsence(Long id, JustifyAbsenceRequest justificationReq) {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
 
-        absence.setJustification(justificationReq.justification());
+        absence.setMotiveTitle(justificationReq.motiveTitle());
+        absence.setMotiveDescription(justificationReq.motiveDescription());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
     }
 
     /**
-     * Removes the justification from an absence and reverts its status to
+     * Removes the motive from an absence and reverts its status to
      * UNJUSTIFIED.
      */
     @Transactional
@@ -79,7 +80,8 @@ public class AbsenceService {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
 
-        absence.setJustification(null);
+        absence.setMotiveTitle(null);
+        absence.setMotiveDescription(null);
         absence.setStatus(AbsenceStatus.UNJUSTIFIED);
     }
 
