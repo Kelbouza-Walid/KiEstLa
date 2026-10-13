@@ -8,6 +8,7 @@ import fr.m2.groupe7.kiestla.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,6 +50,16 @@ public class UserService {
         return userRepository.findByRole(Role.TEACHER).stream()
                 .filter(teacher -> !enrolledTeacherIds.contains(teacher.getId()))
                 .map(UserSummary::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminUserSummary> getAllUsersSortedByRole() {
+        return userRepository.findAll().stream()
+                .map(AdminUserSummary::from)
+                .sorted(Comparator.comparing(AdminUserSummary::role)
+                        .thenComparing(AdminUserSummary::lastName)
+                        .thenComparing(AdminUserSummary::firstName))
                 .toList();
     }
 }

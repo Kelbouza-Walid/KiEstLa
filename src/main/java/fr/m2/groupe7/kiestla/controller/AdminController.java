@@ -5,6 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * AdminController
@@ -25,8 +26,12 @@ public class AdminController {
      * @return the name of the Thymeleaf template to render
      */
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("users", userService.getAllUsers());
+    public String index(@RequestParam(required = false) String sort, Model model) {
+        boolean sortByRole = "role".equalsIgnoreCase(sort);
+        model.addAttribute("users", sortByRole
+                ? userService.getAllUsersSortedByRole()
+                : userService.getAllUsers());
+        model.addAttribute("sortByRole", sortByRole);
         return "admin";
     }
 }
