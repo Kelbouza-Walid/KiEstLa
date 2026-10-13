@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back</a>
+    <h1 class="mb-3 text-primary">Modules</h1>
+
+    <form th:action="@{/admin/modules}" method="get" class="d-flex gap-2 mb-3">
+        <input type="text" name="name" th:value="${name}" class="form-control"
+               placeholder="Search a module by name" data-testid="input-module-search">
+        <button type="submit" class="btn btn-primary" data-testid="btn-search-module">Search</button>
+    </form>
+
+    <div th:replace="~{components :: styled_table(~{::#headersMod}, ~{::#rowsMod})}">
+        <my_headers id="headersMod">
+            <th>Name</th>
+            <th>Referent Teacher</th>
+        </my_headers>
+        <my_rows id="rowsMod">
+            <tr th:each="module : ${modules}" data-testid="module-row"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
+                <td data-testid="module-name" th:text="${module.name}"></td>
+                <td th:text="${module.referenceTeacherLastName ?: 'None'}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(modules)}">
+                <td colspan="2" data-testid="no-modules" class="text-center text-muted py-3">No modules found.</td>
+            </tr>
+        </my_rows>
+    </div>
+</section>
+
+</html>
