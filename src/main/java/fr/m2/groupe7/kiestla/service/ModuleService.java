@@ -191,6 +191,39 @@ public class ModuleService {
     }
 
     /**
+     * Creates a module with its reference teacher.
+     *
+     * @throws BusinessException         if the name is blank or already used, or if
+     *                                   the reference teacher is missing or is not
+     *                                   a teacher
+     * @throws ResourceNotFoundException if the reference teacher does not exist
+     */
+    @Transactional
+    public void createModule(String name, Long referenceTeacherId) {
+        if (name == null || name.isBlank()) {
+            throw new BusinessException("The module name is required.");
+        }
+        if (referenceTeacherId == null) {
+            throw new BusinessException("The reference teacher is required.");
+        }
+        String trimmedName = name.trim();
+        if (moduleRepository.existsByNameIgnoreCase(trimmedName)) {
+            throw new BusinessException("A module with this name already exists.");
+        }
+
+        User referenceTeacher = userRepository.findById(referenceTeacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + referenceTeacherId));
+        if (referenceTeacher.getRole() != Role.TEACHER) {
+            throw new BusinessException("The selected user is not a teacher.");
+        }
+
+        Module module = new Module();
+        module.setName(trimmedName);
+        module.setReferenceTeacher(referenceTeacher);
+        moduleRepository.save(module);
+    }
+
+    /**
      * Deletes a module, along with its enrollments and its absences.
      *
      * @throws ResourceNotFoundException if the module does not exist
