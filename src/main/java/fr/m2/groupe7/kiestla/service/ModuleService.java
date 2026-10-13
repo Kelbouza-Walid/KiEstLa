@@ -173,4 +173,17 @@ public class ModuleService {
                 .map(ModuleSummary::from)
                 .toList();
     }
+
+
+    @Transactional(readOnly = true)
+    public List<ModuleSummary> searchModulesByName(String name) {
+        if (name == null || name.isBlank()) {
+            return getAllModulesSummary();
+        }
+        return moduleRepository.findByNameContainingIgnoreCaseOrderByName(name.trim())
+                .stream()
+                .map(ModuleSummary::from)
+                .toList();
+    }
+
 }

@@ -3,6 +3,7 @@
 
 <section>
     <div class="d-flex justify-content-between align-items-center mb-4">
+        <a th:href="@{/admin/modules}" data-testid="btn-admin-modules" class="btn btn-primary mb-3">Manage modules</a>
         <h1 class="m-0 text-primary">Utilisateurs</h1>
         <form th:action="@{/logout}" method="post" class="m-0">
             <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
