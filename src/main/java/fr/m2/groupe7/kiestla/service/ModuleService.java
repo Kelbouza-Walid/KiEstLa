@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import fr.m2.groupe7.kiestla.dto.ModuleSummary;
@@ -21,10 +22,13 @@ public class ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
+    private final AbsenceRepository absenceRepository;
 
-    public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository) {
+    public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository,
+            AbsenceRepository absenceRepository) {
         this.moduleRepository = moduleRepository;
         this.userRepository = userRepository;
+        this.absenceRepository = absenceRepository;
     }
 
     /**
@@ -184,6 +188,24 @@ public class ModuleService {
                 .stream()
                 .map(ModuleSummary::from)
                 .toList();
+    }
+
+    /**
+     * Deletes a module, along with its enrollments and its absences.
+     *
+     * @throws ResourceNotFoundException if the module does not exist
+     */
+    @Transactional
+    public void deleteModule(Long id) {
+        Module module = moduleRepository.findWithStudentsById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + id));
+
+        // User owns the enrollments join table: unlink from that side
+        for (User user : module.getEnrolledUsers()) {
+            user.getModules().remove(module);
+        }
+        absenceRepository.deleteByModuleId(id);
+        moduleRepository.delete(module);
     }
 
 }

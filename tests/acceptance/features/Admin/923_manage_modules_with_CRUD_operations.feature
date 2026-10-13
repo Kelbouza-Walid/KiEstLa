@@ -23,6 +23,7 @@ Feature: manage modules with CRUD operations
     And I confirm the update
     Then The module's information is updated in the system
 
+  @implemented
   Scenario: remove modules
     Given The module exists
     When I select the module to remove
