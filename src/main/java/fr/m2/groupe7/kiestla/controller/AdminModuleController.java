@@ -31,7 +31,7 @@ public class AdminModuleController {
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         moduleService.deleteModule(id);
-        redirectAttributes.addFlashAttribute("successMessage", "Le module a été supprimé avec succès.");
+        redirectAttributes.addFlashAttribute("successMessage", "The module has been successfully deleted.");
         return "redirect:/admin/modules";
     }
 }

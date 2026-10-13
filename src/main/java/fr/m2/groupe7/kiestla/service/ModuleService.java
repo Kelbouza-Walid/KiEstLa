@@ -198,7 +198,7 @@ public class ModuleService {
     @Transactional
     public void deleteModule(Long id) {
         Module module = moduleRepository.findWithStudentsById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + id));
 
         // User owns the enrollments join table: unlink from that side
         for (User user : module.getEnrolledUsers()) {
