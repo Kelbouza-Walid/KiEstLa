@@ -157,7 +157,7 @@ class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void createUser_duplicateLogin() throws Exception {
-        when(userService.createUser(any())).thenThrow(new BusinessException("Ce login est déjà utilisé."));
+        when(userService.createUser(any())).thenThrow(new BusinessException("This login is already used."));
 
         mockMvc.perform(post("/admin/users").with(csrf())
                 .header("Referer", "/admin")
@@ -167,7 +167,7 @@ class AdminControllerTest {
                 .param("role", "TEACHER"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
-                .andExpect(flash().attribute("errorMessage", "Ce login est déjà utilisé."));
+                .andExpect(flash().attribute("errorMessage", "This login is already used."));
     }
 
     @Test
@@ -257,7 +257,7 @@ class AdminControllerTest {
     @WithMockUser(roles = "ADMIN")
     void updateUser_duplicateLogin() throws Exception {
         when(userService.updateUser(any(), any(), any()))
-                .thenThrow(new BusinessException("Ce login est déjà utilisé."));
+                .thenThrow(new BusinessException("This login is already used."));
 
         mockMvc.perform(post("/admin/users/5").with(csrf())
                 .header("Referer", "/admin/users/5/edit")
@@ -267,7 +267,7 @@ class AdminControllerTest {
                 .param("role", "STUDENT"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/users/5/edit"))
-                .andExpect(flash().attribute("errorMessage", "Ce login est déjà utilisé."));
+                .andExpect(flash().attribute("errorMessage", "This login is already used."));
     }
 
     @Test

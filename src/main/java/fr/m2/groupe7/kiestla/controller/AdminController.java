@@ -74,12 +74,12 @@ public class AdminController {
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Les informations de l'utilisateur sont invalides.");
+                    "Invalid user information.");
             return "redirect:/admin";
         }
         CreatedUser created = userService.createUser(createUserRequest);
         redirectAttributes.addFlashAttribute("successMessage",
-                "L'utilisateur " + created.user().login() + " a été créé.");
+                "User " + created.user().login() + " has been created.");
         redirectAttributes.addFlashAttribute("generatedPassword", created.generatedPassword());
         return "redirect:/admin";
     }

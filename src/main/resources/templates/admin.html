@@ -4,10 +4,10 @@
 <section>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a th:href="@{/admin/modules}" data-testid="btn-admin-modules" class="btn btn-primary mb-3">Manage modules</a>
-        <h1 class="m-0 text-primary">Utilisateurs</h1>
+        <h1 class="m-0 text-primary">Users</h1>
         <form th:action="@{/logout}" method="post" class="m-0">
             <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
-                Déconnexion
+                Log out
             </button>
         </form>
     </div>
@@ -18,9 +18,9 @@
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
                         <h2 class="h4 text-primary fw-bold mb-1">
-                            <i class="bi bi-person-plus me-2"></i>Ajouter un utilisateur
+                            <i class="bi bi-person-plus me-2"></i>Add a user
                         </h2>
-                        <p class="text-muted small mb-0">Un mot de passe sera généré automatiquement</p>
+                        <p class="text-muted small mb-0">A password will be generated automatically</p>
                     </div>
 
                     <div th:if="${successMessage}" class="alert alert-success mb-3" role="alert">
@@ -29,14 +29,14 @@
                             <div data-testid="success-message" th:text="${successMessage}"></div>
                         </div>
                         <div th:if="${generatedPassword}" class="mt-3">
-                            <div class="small mb-1">Mot de passe généré (il ne sera plus affiché) :</div>
+                            <div class="small mb-1">Generated password (it will not be shown again):</div>
                             <div class="input-group">
                                 <code id="generated-password"
                                       class="form-control fs-5 text-center user-select-all bg-white"
                                       data-testid="generated-password" th:text="${generatedPassword}"></code>
                                 <button type="button" id="btn-copy-password" class="btn btn-outline-success"
                                         data-testid="btn-copy-password">
-                                    <i class="bi bi-clipboard"></i> Copier
+                                    <i class="bi bi-clipboard"></i> Copy
                                 </button>
                             </div>
                         </div>
@@ -44,7 +44,7 @@
                             document.getElementById('btn-copy-password').addEventListener('click', async function () {
                                 const password = document.getElementById('generated-password').textContent.trim();
                                 await navigator.clipboard.writeText(password);
-                                this.innerHTML = '<i class="bi bi-check2"></i> Copié';
+                                this.innerHTML = '<i class="bi bi-check2"></i> Copied';
                             });
                         </script>
                     </div>
@@ -57,28 +57,28 @@
                     <form th:action="@{/admin/users}" method="post">
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label for="firstName" class="form-label">Prénom</label>
+                                <label for="firstName" class="form-label">First name</label>
                                 <input type="text" id="firstName" name="firstName" class="form-control"
-                                       placeholder="Jean" data-testid="input-first-name" required maxlength="100">
+                                       placeholder="John" data-testid="input-first-name" required maxlength="100">
                             </div>
                             <div class="col-sm-6">
-                                <label for="lastName" class="form-label">Nom</label>
+                                <label for="lastName" class="form-label">Last name</label>
                                 <input type="text" id="lastName" name="lastName" class="form-control"
-                                       placeholder="Dupont" data-testid="input-last-name" required maxlength="100">
+                                       placeholder="Doe" data-testid="input-last-name" required maxlength="100">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="login" class="form-label">Identifiant</label>
+                            <label for="login" class="form-label">Login</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
                                 <input type="text" id="login" name="login" class="form-control"
-                                       placeholder="jdupont" data-testid="input-login" required maxlength="50">
+                                       placeholder="jdoe" data-testid="input-login" required maxlength="50">
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label for="role" class="form-label">Rôle</label>
+                            <label for="role" class="form-label">Role</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
                                 <select id="role" name="role" class="form-select" data-testid="select-role" required>
@@ -88,7 +88,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100" data-testid="btn-create-user">
-                            <i class="bi bi-person-plus me-1"></i> Créer l'utilisateur
+                            <i class="bi bi-person-plus me-1"></i> Create user
                         </button>
                     </form>
                 </div>

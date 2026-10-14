@@ -112,7 +112,7 @@ public class UserService {
     public CreatedUser createUser(CreateUserRequest request) {
         String login = request.login().trim();
         if (userRepository.existsByLogin(login)) {
-            throw new BusinessException("Ce login est déjà utilisé.");
+            throw new BusinessException("This login is already used.");
         }
 
         String generatedPassword = passwordGenerator.generate();

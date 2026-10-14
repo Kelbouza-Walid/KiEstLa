@@ -118,7 +118,7 @@ public class AdminAddUserSteps {
         // Copy the password with the button, as an administrator would
         getPage().context().grantPermissions(List.of("clipboard-read", "clipboard-write"));
         getPage().getByTestId("btn-copy-password").click();
-        assertThat(getPage().getByTestId("btn-copy-password")).containsText("Copié");
+        assertThat(getPage().getByTestId("btn-copy-password")).containsText("Copied");
 
         getPage().getByTestId("btn-logout").click();
         getPage().waitForURL("**/login?logout=true");
