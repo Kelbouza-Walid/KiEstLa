@@ -243,7 +243,7 @@ public class ModuleService {
     @Transactional(readOnly = true)
     public ModuleMembers getModuleMembers(Long moduleId) {
         Module module = moduleRepository.findWithStudentsById(moduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + moduleId));
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + moduleId));
         User reference = module.getReferenceTeacher();
 
         Set<Long> enrolledIds = module.getEnrolledUsers().stream()
@@ -288,15 +288,15 @@ public class ModuleService {
     public void updateMembers(Long moduleId, Long referenceTeacherId,
             Collection<Long> teacherIds, Collection<Long> studentIds) {
         Module module = moduleRepository.findWithStudentsById(moduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + moduleId));
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + moduleId));
 
         if (referenceTeacherId == null) {
-            throw new BusinessException("L'enseignant référent est obligatoire.");
+            throw new BusinessException("The reference teacher is required.");
         }
         User reference = userRepository.findById(referenceTeacherId)
-                .orElseThrow(() -> new ResourceNotFoundException("Professeur introuvable : " + referenceTeacherId));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + referenceTeacherId));
         if (reference.getRole() != Role.TEACHER) {
-            throw new BusinessException("L'utilisateur sélectionné n'est pas un professeur.");
+            throw new BusinessException("The selected user is not a teacher.");
         }
 
         Set<Long> wantedTeacherIds = teacherIds == null ? new HashSet<>() : new HashSet<>(teacherIds);
@@ -305,9 +305,9 @@ public class ModuleService {
 
         List<User> wantedUsers = new ArrayList<>();
         wantedUsers.addAll(findUsersWithRole(wantedTeacherIds, Role.TEACHER,
-                "L'utilisateur sélectionné n'est pas un professeur."));
+                "The selected user is not a teacher."));
         wantedUsers.addAll(findUsersWithRole(wantedStudentIds, Role.STUDENT,
-                "L'utilisateur sélectionné n'est pas un étudiant."));
+                "The selected user is not a student."));
 
         // User owns the enrollments join table: (un)link from that side
         for (User member : new ArrayList<>(module.getEnrolledUsers())) {
@@ -337,7 +337,7 @@ public class ModuleService {
         }
         List<User> users = userRepository.findAllById(ids);
         if (users.size() != ids.size()) {
-            throw new ResourceNotFoundException("Utilisateur introuvable.");
+            throw new ResourceNotFoundException("User not found.");
         }
         if (users.stream().anyMatch(user -> user.getRole() != role)) {
             throw new BusinessException(wrongRoleMessage);

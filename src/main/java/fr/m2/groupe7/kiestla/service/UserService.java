@@ -80,7 +80,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public AdminUserDetails getUserDetails(Long id) {
         User user = userRepository.findWithModulesById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         List<ModuleSummary> enrolledModules = user.getModules().stream()
                 .map(ModuleSummary::from)
@@ -139,7 +139,7 @@ public class UserService {
     public AdminUserSummary getUser(Long id) {
         return userRepository.findById(id)
                 .map(AdminUserSummary::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
     }
 
     /**
@@ -157,25 +157,25 @@ public class UserService {
     @Transactional
     public AdminUserSummary updateUser(Long id, UpdateUserRequest request, String currentLogin) {
         User user = userRepository.findWithModulesById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         String login = request.login().trim();
         boolean roleChanged = request.role() != user.getRole();
 
         if (user.getLogin().equals(currentLogin) && (roleChanged || !login.equals(user.getLogin()))) {
-            throw new BusinessException("Vous ne pouvez pas modifier votre propre login ni votre propre rôle.");
+            throw new BusinessException("You cannot change your own login or role.");
         }
         if (userRepository.existsByLoginAndIdNot(login, id)) {
-            throw new BusinessException("Ce login est déjà utilisé.");
+            throw new BusinessException("This login is already used.");
         }
         if (roleChanged) {
             if (moduleRepository.existsByReferenceTeacherId(id)) {
                 throw new BusinessException(
-                        "Impossible de changer le rôle : cet utilisateur est enseignant référent d'un module.");
+                        "Cannot change the role: this user is the reference teacher of a module.");
             }
             if (absenceRepository.existsByStudentId(id)) {
                 throw new BusinessException(
-                        "Impossible de changer le rôle : cet utilisateur a des absences enregistrées.");
+                        "Cannot change the role: this user has recorded absences.");
             }
             user.getModules().clear();
         }

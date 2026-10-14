@@ -152,7 +152,7 @@ class AdminModuleMembersTest {
                 .param("referenceTeacherId", reference.getId().toString())
                 .param("teacherIds", otherStudent.getId().toString()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(flash().attribute("errorMessage", "L'utilisateur sélectionné n'est pas un professeur."));
+                .andExpect(flash().attribute("errorMessage", "The selected user is not a teacher."));
 
         assertEquals(Set.of("members-teacher1", "members-student1"), memberLogins());
     }
@@ -180,7 +180,7 @@ class AdminModuleMembersTest {
                 .header("Referer", "/admin/modules/" + module.getId() + "/members")
                 .param("teacherIds", enrolledTeacher.getId().toString()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(flash().attribute("errorMessage", "L'enseignant référent est obligatoire."));
+                .andExpect(flash().attribute("errorMessage", "The reference teacher is required."));
 
         assertEquals(reference.getId(), moduleRepository.findById(module.getId()).orElseThrow()
                 .getReferenceTeacher().getId());

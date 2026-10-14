@@ -110,12 +110,12 @@ public class AdminController {
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Les informations de l'utilisateur sont invalides.");
+                    "Invalid user information.");
             return "redirect:/admin/users/" + id + "/edit";
         }
         AdminUserSummary updated = userService.updateUser(id, updateUserRequest, principal.getName());
         redirectAttributes.addFlashAttribute("successMessage",
-                "L'utilisateur " + updated.login() + " a été modifié.");
+                "User " + updated.login() + " has been updated.");
         return "redirect:/admin";
     }
 }

@@ -100,18 +100,18 @@
 
     <form th:action="@{/admin}" method="get" class="d-flex flex-wrap gap-2 mb-3">
         <input type="text" name="q" th:value="${searchQuery}" class="form-control w-auto flex-grow-1"
-               placeholder="Rechercher par prénom, nom ou login" aria-label="Rechercher un utilisateur"
+               placeholder="Search by first name, last name or login" aria-label="Search a user"
                data-testid="input-user-search">
-        <select name="role" class="form-select w-auto" aria-label="Filtrer par rôle" data-testid="select-search-role">
-            <option value="">Tous les rôles</option>
+        <select name="role" class="form-select w-auto" aria-label="Filter by role" data-testid="select-search-role">
+            <option value="">All roles</option>
             <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"
                     th:selected="${role == searchRole}"></option>
         </select>
         <button type="submit" class="btn btn-primary" data-testid="btn-search-user">
-            <i class="bi bi-search me-1"></i> Rechercher
+            <i class="bi bi-search me-1"></i> Search
         </button>
         <a th:if="${!#strings.isEmpty(searchQuery) or searchRole != null}" th:href="@{/admin}"
-           class="btn btn-outline-secondary" data-testid="btn-reset-search">Réinitialiser</a>
+           class="btn btn-outline-secondary" data-testid="btn-reset-search">Reset</a>
     </form>
 
     <div th:replace="~{components :: styled_table(~{::#user-headers}, ~{::#user-rows})}">
@@ -137,7 +137,7 @@
                 <td onclick="event.stopPropagation()" style="cursor: default;">
                     <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" data-testid="btn-edit-user"
                        class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-pencil"></i> Modifier
+                        <i class="bi bi-pencil"></i> Edit
                     </a>
                 </td>
             </tr>

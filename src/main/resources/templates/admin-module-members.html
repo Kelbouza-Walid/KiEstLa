@@ -8,16 +8,16 @@
     <div th:if="${errorMessage}" class="alert alert-danger" role="alert" data-testid="error-message" th:text="${errorMessage}"></div>
 
     <h1 class="mb-4 text-primary">
-        Membres du module <span data-testid="members-module-name" th:text="${module.name}"></span>
+        Members of the module <span data-testid="members-module-name" th:text="${module.name}"></span>
     </h1>
     <form th:action="@{/admin/modules/{id}/members(id=${module.id})}" method="post">
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <label for="referenceTeacherId" class="h5 form-label">Enseignant référent</label>
+                <label for="referenceTeacherId" class="h5 form-label">Reference teacher</label>
                 <select id="referenceTeacherId" name="referenceTeacherId" class="form-select"
                         data-testid="select-reference-teacher" required>
                     <option value="" disabled th:selected="${module.referenceTeacherId == null}">
-                        Choisir un enseignant référent
+                        Select a reference teacher
                     </option>
                     <option th:each="teacher : ${module.referenceTeacherChoices}"
                             th:value="${teacher.id}"
@@ -25,8 +25,8 @@
                             th:text="${teacher.firstName + ' ' + teacher.lastName + ' (' + teacher.login + ')'}"></option>
                 </select>
                 <div class="form-text">
-                    Le référent n'est pas coché comme professeur du module. Un ancien référent apparaît
-                    dans la liste des professeurs après l'enregistrement.
+                    The reference teacher is not checked as a teacher of the module. A former reference teacher
+                    appears in the teachers list once saved.
                 </div>
             </div>
         </div>
@@ -35,8 +35,8 @@
             <div class="col-12 col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
-                        <h2 class="h5 mb-3">Professeurs</h2>
-                        <p th:if="${#lists.isEmpty(module.teachers)}" class="text-muted mb-0">Aucun professeur.</p>
+                        <h2 class="h5 mb-3">Teachers</h2>
+                        <p th:if="${#lists.isEmpty(module.teachers)}" class="text-muted mb-0">No teachers.</p>
                         <div th:each="teacher : ${module.teachers}" class="form-check">
                             <input class="form-check-input" type="checkbox" name="teacherIds"
                                    th:id="${'teacher-' + teacher.user.id}" th:value="${teacher.user.id}"
@@ -51,8 +51,8 @@
             <div class="col-12 col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
-                        <h2 class="h5 mb-3">Étudiants</h2>
-                        <p th:if="${#lists.isEmpty(module.students)}" class="text-muted mb-0">Aucun étudiant.</p>
+                        <h2 class="h5 mb-3">Students</h2>
+                        <p th:if="${#lists.isEmpty(module.students)}" class="text-muted mb-0">No students.</p>
                         <div th:each="student : ${module.students}" class="form-check">
                             <input class="form-check-input" type="checkbox" name="studentIds"
                                    th:id="${'student-' + student.user.id}" th:value="${student.user.id}"
@@ -67,10 +67,10 @@
         </div>
 
         <p class="text-muted small">
-            Les cases cochées sont les membres du module. Décocher un étudiant le désinscrit, ses absences sont conservées.
+            Checked users are members of the module. Unchecking a student unenrolls them, their absences are kept.
         </p>
         <button type="submit" class="btn btn-primary" data-testid="btn-confirm-update">
-            <i class="bi bi-check-lg me-1"></i> Enregistrer
+            <i class="bi bi-check-lg me-1"></i> Save
         </button>
     </form>
 </section>

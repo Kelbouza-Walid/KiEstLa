@@ -90,12 +90,12 @@ class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void viewUser_notFound() throws Exception {
-        when(userService.getUserDetails(99L)).thenThrow(new ResourceNotFoundException("Utilisateur introuvable."));
+        when(userService.getUserDetails(99L)).thenThrow(new ResourceNotFoundException("User not found."));
 
         mockMvc.perform(get("/admin/users/99").header("Referer", "/admin"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
-                .andExpect(flash().attribute("errorMessage", "Utilisateur introuvable."));
+                .andExpect(flash().attribute("errorMessage", "User not found."));
     }
 
     @Test
@@ -215,12 +215,12 @@ class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void editUser_notFound() throws Exception {
-        when(userService.getUser(99L)).thenThrow(new ResourceNotFoundException("Utilisateur introuvable."));
+        when(userService.getUser(99L)).thenThrow(new ResourceNotFoundException("User not found."));
 
         mockMvc.perform(get("/admin/users/99/edit").header("Referer", "/admin"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
-                .andExpect(flash().attribute("errorMessage", "Utilisateur introuvable."));
+                .andExpect(flash().attribute("errorMessage", "User not found."));
     }
 
     @Test
@@ -233,7 +233,7 @@ class AdminControllerTest {
         performValidUpdate()
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
-                .andExpect(flash().attribute("successMessage", "L'utilisateur nfaivre2 a été modifié."));
+                .andExpect(flash().attribute("successMessage", "User nfaivre2 has been updated."));
 
         verify(userService).updateUser(5L, expected, "admin");
     }

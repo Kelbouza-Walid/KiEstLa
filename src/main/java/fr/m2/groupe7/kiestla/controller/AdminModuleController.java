@@ -63,7 +63,7 @@ public class AdminModuleController {
             @RequestParam(required = false) List<Long> studentIds,
             RedirectAttributes redirectAttributes) {
         moduleService.updateMembers(id, referenceTeacherId, teacherIds, studentIds);
-        redirectAttributes.addFlashAttribute("successMessage", "Les membres du module ont été mis à jour.");
+        redirectAttributes.addFlashAttribute("successMessage", "The module members have been updated.");
         return "redirect:/admin/modules/" + id + "/members";
     }
 }
