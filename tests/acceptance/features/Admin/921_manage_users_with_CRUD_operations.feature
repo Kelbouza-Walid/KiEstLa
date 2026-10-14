@@ -1,6 +1,6 @@
 # language: en
 Feature: manage users with CRUD operations
-  As a secretary, I want to be able to create, view, update and delete users
+  As an administrator, I want to be able to create, view, update and delete users
   so that I can keep the list of users accurate
 
   Background: I have already logged in
@@ -10,12 +10,19 @@ Feature: manage users with CRUD operations
     When I search for a user by name or role
     Then The matching users are displayed
 
+  @implemented
   Scenario: add users
     Given The user information is valid
     When I enter the user's personal information
     And I set the user's role
     And I confirm the creation
     Then The user is registered in the system
+
+  @implemented
+  Scenario: new user logs in with the generated password
+    Given A new user has been created by the administrator
+    When The new user logs in with the generated password
+    Then The new user is redirected to their home page
 
   Scenario: update users
     Given The user exists

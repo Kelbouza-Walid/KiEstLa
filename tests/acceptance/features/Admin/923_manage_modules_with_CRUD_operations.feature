@@ -10,10 +10,11 @@ Feature: manage modules with CRUD operations
     When I search for a module by its name
     Then The matching modules are displayed
 
+  @implemented
   Scenario: add modules
     Given The module information is valid
     When I enter the module name
-    And I add a corresponding description
+    And I select a reference teacher
     And I confirm the creation
     Then The module is registered in the system
 
@@ -23,6 +24,7 @@ Feature: manage modules with CRUD operations
     And I confirm the update
     Then The module's information is updated in the system
 
+  @implemented
   Scenario: remove modules
     Given The module exists
     When I select the module to remove

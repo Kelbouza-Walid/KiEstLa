@@ -21,9 +21,9 @@
             <th>Last Name</th>
         </my_headers>
         <my_rows id="rowsStudents">
-            <tr th:each="student : ${module.students}">
-                <td th:text="${student.firstName}"></td>
-                <td th:text="${student.lastName}"></td>
+            <tr th:each="student : ${module.students}" data-testid="module-student">
+                <td data-testid="student-first-name" th:text="${student.firstName}"></td>
+                <td data-testid="student-last-name" th:text="${student.lastName}"></td>
             </tr>
             <tr th:if="${#lists.isEmpty(module.students)}">
                 <td colspan="2" class="text-center text-muted py-3">No students enrolled in this module.</td>

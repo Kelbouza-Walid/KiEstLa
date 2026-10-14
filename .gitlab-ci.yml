@@ -16,6 +16,12 @@ test-unit:
   script:
     - chmod +x mvnw
     - ./mvnw test -Dtest='!CucumberTest'
+    - grep -o 'Total[^%]*%' target/site/jacoco/index.html
+  coverage: '/Total.*?([0-9]{1,3})\D?%/'
+  artifacts:
+    paths:
+      - target/site/jacoco/
+    expire_in: 1 week
   only:
     - merge_requests
     - main

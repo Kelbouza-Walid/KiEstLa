@@ -1,10 +1,18 @@
 package fr.m2.groupe7.kiestla.controller;
 
+import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
+import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.ui.Model;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * AdminController
@@ -27,6 +35,29 @@ public class AdminController {
     @GetMapping
     public String index(Model model) {
         model.addAttribute("users", userService.getAllUsers());
+        model.addAttribute("roles", Role.values());
         return "admin";
+    }
+
+    /**
+     * Creates a new user.
+     *
+     * @return a redirection to the admin dashboard
+     */
+    @PostMapping("/users")
+    public String createUser(
+            @Valid @ModelAttribute CreateUserRequest createUserRequest,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Les informations de l'utilisateur sont invalides.");
+            return "redirect:/admin";
+        }
+        CreatedUser created = userService.createUser(createUserRequest);
+        redirectAttributes.addFlashAttribute("successMessage",
+                "L'utilisateur " + created.user().login() + " a été créé.");
+        redirectAttributes.addFlashAttribute("generatedPassword", created.generatedPassword());
+        return "redirect:/admin";
     }
 }

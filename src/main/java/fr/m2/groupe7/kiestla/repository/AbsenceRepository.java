@@ -29,6 +29,8 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
 	@EntityGraph(attributePaths = "student")
 	List<Absence> findAllByOrderByDateDesc();
 
-	@EntityGraph(attributePaths = "module")
-	List<Absence> findByStudentLoginOrderByDateDesc(String login);
+    @EntityGraph(attributePaths = "module")
+    List<Absence> findByStudentLoginOrderByDateDesc(String login);
+
+    void deleteByModuleId(Long moduleId);
 }
