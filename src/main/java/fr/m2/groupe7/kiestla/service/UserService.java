@@ -64,8 +64,14 @@ public class UserService {
         if (noQuery && role == null) {
             return getAllUsers();
         }
-        String pattern = "%" + (noQuery ? "" : query.trim().toLowerCase(Locale.ROOT)) + "%";
-        return userRepository.search(pattern, role).stream()
+        String text = noQuery ? "" : query.trim().toLowerCase(Locale.ROOT);
+
+        return userRepository.findAll().stream()
+                .filter(user -> role == null || user.getRole() == role)
+                .filter(user -> user.getFirstName().toLowerCase(Locale.ROOT).contains(text)
+                        || user.getLastName().toLowerCase(Locale.ROOT).contains(text)
+                        || user.getLogin().toLowerCase(Locale.ROOT).contains(text))
+                .sorted(Comparator.comparing(User::getLastName).thenComparing(User::getFirstName))
                 .map(AdminUserSummary::from)
                 .toList();
     }

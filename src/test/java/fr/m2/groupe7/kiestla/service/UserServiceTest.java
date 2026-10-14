@@ -323,42 +323,65 @@ class UserServiceTest {
 
     @Test
     void searchUsers_noCriteriaReturnsAllUsers() {
-        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
-        when(userRepository.findAll()).thenReturn(List.of(admin));
+        List<User> users = searchableUsers();
+        when(userRepository.findAll()).thenReturn(users);
 
         List<AdminUserSummary> result = userService.searchUsers("  ", null);
 
-        assertEquals(List.of(AdminUserSummary.from(admin)), result);
-        verify(userRepository, never()).search(any(), any());
+        assertEquals(users.stream().map(AdminUserSummary::from).toList(), result);
     }
 
     @Test
-    void searchUsers_byName() {
-        User student = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
-        when(userRepository.search("%faiv%", null)).thenReturn(List.of(student));
+    void searchUsers_byNameIgnoresCase() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
 
         List<AdminUserSummary> result = userService.searchUsers(" FAIV ", null);
 
-        assertEquals(List.of(AdminUserSummary.from(student)), result);
+        assertEquals(List.of("nfaivre"), logins(result));
     }
 
     @Test
-    void searchUsers_byRoleOnly() {
-        User teacher = createUser(10L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
-        when(userRepository.search("%%", Role.TEACHER)).thenReturn(List.of(teacher));
+    void searchUsers_byLogin() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
 
-        List<AdminUserSummary> result = userService.searchUsers(null, Role.TEACHER);
+        assertEquals(List.of("skacmaz"), logins(userService.searchUsers("skac", null)));
+    }
 
-        assertEquals(List.of(AdminUserSummary.from(teacher)), result);
-        verify(userRepository, never()).findAll();
+    @Test
+    void searchUsers_byRoleOnlySortedByName() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        List<AdminUserSummary> result = userService.searchUsers(null, Role.STUDENT);
+
+        // sorted by last name: Faivre, Kacmaz
+        assertEquals(List.of("nfaivre", "skacmaz"), logins(result));
     }
 
     @Test
     void searchUsers_byNameAndRole() {
-        when(userRepository.search("%f%", Role.STUDENT)).thenReturn(List.of());
+        when(userRepository.findAll()).thenReturn(searchableUsers());
 
-        assertTrue(userService.searchUsers("f", Role.STUDENT).isEmpty());
-        verify(userRepository).search("%f%", Role.STUDENT);
+        // "f" matches Noam Faivre and Fabrice Bouquet, the role keeps only the student
+        assertEquals(List.of("nfaivre"), logins(userService.searchUsers("f", Role.STUDENT)));
+    }
+
+    @Test
+    void searchUsers_noMatch() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        assertTrue(userService.searchUsers("zzz", null).isEmpty());
+    }
+
+    private List<User> searchableUsers() {
+        return List.of(
+                createUser(1L, "System", "Admin", "admin", Role.ADMIN),
+                createUser(2L, "Suleyman", "Kacmaz", "skacmaz", Role.STUDENT),
+                createUser(3L, "Noam", "Faivre", "nfaivre", Role.STUDENT),
+                createUser(4L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER));
+    }
+
+    private List<String> logins(List<AdminUserSummary> users) {
+        return users.stream().map(AdminUserSummary::login).toList();
     }
 
     @Test
