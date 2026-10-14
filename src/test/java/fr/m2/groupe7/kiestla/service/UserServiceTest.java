@@ -4,15 +4,20 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
+import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
+import fr.m2.groupe7.kiestla.dto.CreatedUser;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
+import fr.m2.groupe7.kiestla.exception.BusinessException;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +31,12 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private PasswordGenerator passwordGenerator;
 
     @InjectMocks
     private UserService userService;
@@ -106,6 +117,44 @@ class UserServiceTest {
         assertEquals("Nicolas", result.get(0).firstName());
         assertEquals("Marilleau", result.get(0).lastName());
         verify(userRepository).findByRole(Role.TEACHER);
+    }
+
+    @Test
+    void createUser_success() {
+        CreateUserRequest request = new CreateUserRequest(" Fabrice ", " Bouquet ", " fbouquet ", Role.TEACHER);
+        when(userRepository.existsByLogin("fbouquet")).thenReturn(false);
+        when(passwordGenerator.generate()).thenReturn("Abc23xyz45Kq");
+        when(passwordEncoder.encode("Abc23xyz45Kq")).thenReturn("{bcrypt}hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(42L);
+            return saved;
+        });
+
+        CreatedUser result = userService.createUser(request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertEquals("Fabrice", saved.getFirstName());
+        assertEquals("Bouquet", saved.getLastName());
+        assertEquals("fbouquet", saved.getLogin());
+        assertEquals(Role.TEACHER, saved.getRole());
+        assertEquals("{bcrypt}hashed", saved.getPassword());
+
+        assertEquals(new AdminUserSummary(42L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER), result.user());
+        assertEquals("Abc23xyz45Kq", result.generatedPassword());
+    }
+
+    @Test
+    void createUser_duplicateLogin() {
+        CreateUserRequest request = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", Role.STUDENT);
+        when(userRepository.existsByLogin("fbouquet")).thenReturn(true);
+
+        assertThrows(BusinessException.class, () -> userService.createUser(request));
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(passwordEncoder, passwordGenerator);
     }
 
     private User createUser(Long id, String firstName, String lastName, String login, Role role) {
