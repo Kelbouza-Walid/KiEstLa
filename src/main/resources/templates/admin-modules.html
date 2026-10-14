@@ -45,12 +45,16 @@
                 <td data-testid="module-name" th:text="${module.name}"></td>
                 <td th:text="${module.referenceTeacherLastName ?: 'None'}"></td>
                 <td onclick="event.stopPropagation()" style="cursor: default;">
-                    <form th:action="@{/admin/modules/{id}/delete(id=${module.id})}" method="post" class="m-0"
-                          onsubmit="return confirm('Are you sure you want to delete this module ? Its enrollments and absences will be deleted too.');">
-                        <button type="submit" data-testid="btn-delete-module" class="btn btn-sm btn-outline-danger">
-                            Delete
-                        </button>
-                    </form>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/admin/modules/{id}/members(id=${module.id})}" data-testid="btn-module-members"
+                           class="btn btn-sm btn-outline-primary">Members</a>
+                        <form th:action="@{/admin/modules/{id}/delete(id=${module.id})}" method="post" class="m-0"
+                              onsubmit="return confirm('Are you sure you want to delete this module ? Its enrollments and absences will be deleted too.');">
+                            <button type="submit" data-testid="btn-delete-module" class="btn btn-sm btn-outline-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(modules)}">

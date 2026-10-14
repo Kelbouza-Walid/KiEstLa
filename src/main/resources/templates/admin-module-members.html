@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/admin/modules}" class="btn btn-outline-secondary btn-sm mb-3" data-testid="btn-back-modules">&larr; Back</a>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="alert" data-testid="success-message" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" data-testid="error-message" th:text="${errorMessage}"></div>
+
+    <h1 class="mb-2 text-primary">
+        Membres du module <span data-testid="members-module-name" th:text="${module.name}"></span>
+    </h1>
+    <p class="text-muted mb-4">
+        Enseignant référent :
+        <strong th:text="${module.referenceTeacherName ?: 'None'}">None</strong>
+    </p>
+
+    <form th:action="@{/admin/modules/{id}/members(id=${module.id})}" method="post">
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Professeurs</h2>
+                        <p th:if="${#lists.isEmpty(module.teachers)}" class="text-muted mb-0">Aucun professeur.</p>
+                        <div th:each="teacher : ${module.teachers}" class="form-check">
+                            <input class="form-check-input" type="checkbox" name="teacherIds"
+                                   th:id="${'teacher-' + teacher.user.id}" th:value="${teacher.user.id}"
+                                   th:checked="${teacher.enrolled}"
+                                   th:attr="data-testid=${'checkbox-teacher-' + teacher.user.login}">
+                            <label class="form-check-label" th:for="${'teacher-' + teacher.user.id}"
+                                   th:text="${teacher.user.firstName + ' ' + teacher.user.lastName + ' (' + teacher.user.login + ')'}"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Étudiants</h2>
+                        <p th:if="${#lists.isEmpty(module.students)}" class="text-muted mb-0">Aucun étudiant.</p>
+                        <div th:each="student : ${module.students}" class="form-check">
+                            <input class="form-check-input" type="checkbox" name="studentIds"
+                                   th:id="${'student-' + student.user.id}" th:value="${student.user.id}"
+                                   th:checked="${student.enrolled}"
+                                   th:attr="data-testid=${'checkbox-student-' + student.user.login}">
+                            <label class="form-check-label" th:for="${'student-' + student.user.id}"
+                                   th:text="${student.user.firstName + ' ' + student.user.lastName + ' (' + student.user.login + ')'}"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-muted small">
+            Les cases cochées sont les membres du module. Décocher un étudiant le désinscrit, ses absences sont conservées.
+        </p>
+        <button type="submit" class="btn btn-primary" data-testid="btn-confirm-update">
+            <i class="bi bi-check-lg me-1"></i> Enregistrer
+        </button>
+    </form>
+</section>
+
+</html>

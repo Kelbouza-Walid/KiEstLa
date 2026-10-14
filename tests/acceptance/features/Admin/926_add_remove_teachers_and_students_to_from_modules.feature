@@ -5,6 +5,7 @@ Feature: add/remove teachers and students to/from modules
 
   Background: I have already logged in
 
+  @implemented
   Scenario: update module to add teachers and students
     Given The module exists
     And The teachers and students to add exist
@@ -13,6 +14,7 @@ Feature: add/remove teachers and students to/from modules
     And I confirm the update
     Then The teachers and students are registered as members of the module
 
+  @implemented
   Scenario: update module to remove teachers and students
     Given The module exists
     And The teachers and students to remove are currently members of the module

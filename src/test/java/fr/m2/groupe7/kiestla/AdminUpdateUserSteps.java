@@ -91,9 +91,10 @@ public class AdminUpdateUserSteps {
         getPage().getByTestId("select-role").selectOption(NEW_ROLE.name());
     }
 
+    // Shared with other features (e.g. module members): every update form uses this button
     @When("I confirm the update")
     public void i_confirm_the_update() {
-        getPage().getByTestId("btn-update-user").click();
+        getPage().getByTestId("btn-confirm-update").click();
     }
 
     @Then("The user's information is updated in the system")

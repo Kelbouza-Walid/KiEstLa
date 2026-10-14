@@ -12,6 +12,8 @@
         Referent Teacher:
         <strong th:text="${module.referenceTeacherName ?: 'None'}">None</strong>
     </p>
+    <a th:if="${isAdmin}" th:href="@{/admin/modules/{id}/members(id=${module.id})}"
+       data-testid="btn-module-members" class="btn btn-outline-primary mb-4">Gérer les membres</a>
 
     <!-- Students enrolled in this module -->
     <h4 class="mb-3">Students</h4>

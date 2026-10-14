@@ -1,7 +1,12 @@
 package fr.m2.groupe7.kiestla.service;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +16,8 @@ import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.ModuleMembers;
+import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
@@ -23,6 +30,9 @@ public class ModuleService {
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
     private final AbsenceRepository absenceRepository;
+
+    private static final Comparator<User> BY_NAME = Comparator.comparing(User::getLastName)
+            .thenComparing(User::getFirstName);
 
     public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository,
             AbsenceRepository absenceRepository) {
@@ -221,6 +231,102 @@ public class ModuleService {
         module.setName(trimmedName);
         module.setReferenceTeacher(referenceTeacher);
         moduleRepository.save(module);
+    }
+
+    /**
+     * Returns every teacher and student, flagged with whether they are enrolled in the module.
+     * The reference teacher is left out: it is not managed from the members form.
+     *
+     * @throws ResourceNotFoundException if the module does not exist
+     */
+    @Transactional(readOnly = true)
+    public ModuleMembers getModuleMembers(Long moduleId) {
+        Module module = moduleRepository.findWithStudentsById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + moduleId));
+        User reference = module.getReferenceTeacher();
+
+        Set<Long> enrolledIds = module.getEnrolledUsers().stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
+
+        List<ModuleMembers.Member> teachers = userRepository.findByRole(Role.TEACHER).stream()
+                .filter(teacher -> reference == null || !teacher.getId().equals(reference.getId()))
+                .sorted(BY_NAME)
+                .map(teacher -> new ModuleMembers.Member(UserSummary.from(teacher), enrolledIds.contains(teacher.getId())))
+                .toList();
+        List<ModuleMembers.Member> students = userRepository.findByRole(Role.STUDENT).stream()
+                .sorted(BY_NAME)
+                .map(student -> new ModuleMembers.Member(UserSummary.from(student), enrolledIds.contains(student.getId())))
+                .toList();
+
+        return new ModuleMembers(
+                module.getId(),
+                module.getName(),
+                reference != null ? reference.getFirstName() + " " + reference.getLastName() : null,
+                teachers,
+                students);
+    }
+
+    /**
+     * Sets the teachers and students enrolled in a module: the selected users are enrolled,
+     * the current members who are not selected anymore are unenrolled.
+     * The absences of an unenrolled student are kept.
+     *
+     * @param moduleId   the module's id
+     * @param teacherIds the teachers that must be enrolled (the reference teacher is ignored)
+     * @param studentIds the students that must be enrolled
+     * @throws ResourceNotFoundException if the module or one of the users does not exist
+     * @throws BusinessException         if a selected teacher is not a teacher or a selected student not a student
+     */
+    @Transactional
+    public void updateMembers(Long moduleId, Collection<Long> teacherIds, Collection<Long> studentIds) {
+        Module module = moduleRepository.findWithStudentsById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + moduleId));
+
+        Set<Long> wantedTeacherIds = teacherIds == null ? new HashSet<>() : new HashSet<>(teacherIds);
+        Set<Long> wantedStudentIds = studentIds == null ? new HashSet<>() : new HashSet<>(studentIds);
+        if (module.getReferenceTeacher() != null) {
+            wantedTeacherIds.remove(module.getReferenceTeacher().getId());
+        }
+
+        List<User> wantedUsers = new ArrayList<>();
+        wantedUsers.addAll(findUsersWithRole(wantedTeacherIds, Role.TEACHER,
+                "L'utilisateur sélectionné n'est pas un professeur."));
+        wantedUsers.addAll(findUsersWithRole(wantedStudentIds, Role.STUDENT,
+                "L'utilisateur sélectionné n'est pas un étudiant."));
+
+        // User owns the enrollments join table: (un)link from that side
+        for (User member : new ArrayList<>(module.getEnrolledUsers())) {
+            boolean unselectedTeacher = member.getRole() == Role.TEACHER && !wantedTeacherIds.contains(member.getId());
+            boolean unselectedStudent = member.getRole() == Role.STUDENT && !wantedStudentIds.contains(member.getId());
+            if (unselectedTeacher || unselectedStudent) {
+                member.getModules().removeIf(m -> m.getId().equals(moduleId));
+                module.getEnrolledUsers().remove(member);
+                userRepository.save(member);
+            }
+        }
+        for (User user : wantedUsers) {
+            boolean alreadyEnrolled = user.getModules().stream().anyMatch(m -> m.getId().equals(moduleId));
+            if (!alreadyEnrolled) {
+                user.getModules().add(module);
+                module.getEnrolledUsers().add(user);
+                userRepository.save(user);
+            }
+        }
+    }
+
+    private List<User> findUsersWithRole(Set<Long> ids, Role role, String wrongRoleMessage) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<User> users = userRepository.findAllById(ids);
+        if (users.size() != ids.size()) {
+            throw new ResourceNotFoundException("Utilisateur introuvable.");
+        }
+        if (users.stream().anyMatch(user -> user.getRole() != role)) {
+            throw new BusinessException(wrongRoleMessage);
+        }
+        return users;
     }
 
     /**
