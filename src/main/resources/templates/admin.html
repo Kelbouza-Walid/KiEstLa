@@ -11,6 +11,91 @@
         </form>
     </div>
 
+    <div class="row justify-content-center mb-5">
+        <div class="col-12 col-md-8 col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="h4 text-primary fw-bold mb-1">
+                            <i class="bi bi-person-plus me-2"></i>Ajouter un utilisateur
+                        </h2>
+                        <p class="text-muted small mb-0">Un mot de passe sera généré automatiquement</p>
+                    </div>
+
+                    <div th:if="${successMessage}" class="alert alert-success mb-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <div data-testid="success-message" th:text="${successMessage}"></div>
+                        </div>
+                        <div th:if="${generatedPassword}" class="mt-3">
+                            <div class="small mb-1">Mot de passe généré (il ne sera plus affiché) :</div>
+                            <div class="input-group">
+                                <code id="generated-password"
+                                      class="form-control fs-5 text-center user-select-all bg-white"
+                                      data-testid="generated-password" th:text="${generatedPassword}"></code>
+                                <button type="button" id="btn-copy-password" class="btn btn-outline-success"
+                                        data-testid="btn-copy-password">
+                                    <i class="bi bi-clipboard"></i> Copier
+                                </button>
+                            </div>
+                        </div>
+                        <script th:if="${generatedPassword}">
+                            document.getElementById('btn-copy-password').addEventListener('click', async function () {
+                                const password = document.getElementById('generated-password').textContent.trim();
+                                await navigator.clipboard.writeText(password);
+                                this.innerHTML = '<i class="bi bi-check2"></i> Copié';
+                            });
+                        </script>
+                    </div>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div data-testid="error-message" th:text="${errorMessage}"></div>
+                    </div>
+
+                    <form th:action="@{/admin/users}" method="post">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="firstName" class="form-label">Prénom</label>
+                                <input type="text" id="firstName" name="firstName" class="form-control"
+                                       placeholder="Jean" data-testid="input-first-name" required maxlength="100">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="lastName" class="form-label">Nom</label>
+                                <input type="text" id="lastName" name="lastName" class="form-control"
+                                       placeholder="Dupont" data-testid="input-last-name" required maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="login" class="form-label">Identifiant</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                                <input type="text" id="login" name="login" class="form-control"
+                                       placeholder="jdupont" data-testid="input-login" required maxlength="50">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="role" class="form-label">Rôle</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
+                                <select id="role" name="role" class="form-select" data-testid="select-role" required>
+                                    <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" data-testid="btn-create-user">
+                            <i class="bi bi-person-plus me-1"></i> Créer l'utilisateur
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mb-3 text-primary">All Users</h2>
     <div th:replace="~{components :: styled_table(~{::#user-headers}, ~{::#user-rows})}">
         <my_headers id="user-headers">
             <th>ID</th>
