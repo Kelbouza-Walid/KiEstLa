@@ -7,15 +7,30 @@
     <div th:if="${successMessage}" class="alert alert-success" role="alert" data-testid="success-message" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger" role="alert" data-testid="error-message" th:text="${errorMessage}"></div>
 
-    <h1 class="mb-2 text-primary">
+    <h1 class="mb-4 text-primary">
         Membres du module <span data-testid="members-module-name" th:text="${module.name}"></span>
     </h1>
-    <p class="text-muted mb-4">
-        Enseignant référent :
-        <strong th:text="${module.referenceTeacherName ?: 'None'}">None</strong>
-    </p>
-
     <form th:action="@{/admin/modules/{id}/members(id=${module.id})}" method="post">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <label for="referenceTeacherId" class="h5 form-label">Enseignant référent</label>
+                <select id="referenceTeacherId" name="referenceTeacherId" class="form-select"
+                        data-testid="select-reference-teacher" required>
+                    <option value="" disabled th:selected="${module.referenceTeacherId == null}">
+                        Choisir un enseignant référent
+                    </option>
+                    <option th:each="teacher : ${module.referenceTeacherChoices}"
+                            th:value="${teacher.id}"
+                            th:selected="${teacher.id == module.referenceTeacherId}"
+                            th:text="${teacher.firstName + ' ' + teacher.lastName + ' (' + teacher.login + ')'}"></option>
+                </select>
+                <div class="form-text">
+                    Le référent n'est pas coché comme professeur du module. Un ancien référent apparaît
+                    dans la liste des professeurs après l'enregistrement.
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mb-4">
             <div class="col-12 col-md-6">
                 <div class="card shadow-sm h-100">

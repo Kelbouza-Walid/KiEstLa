@@ -234,8 +234,9 @@ public class ModuleService {
     }
 
     /**
-     * Returns every teacher and student, flagged with whether they are enrolled in the module.
-     * The reference teacher is left out: it is not managed from the members form.
+     * Returns the module's reference teacher with the teachers it can be chosen among,
+     * and every teacher and student flagged with whether they are enrolled in the module.
+     * The reference teacher is left out of the teachers checkboxes: it is chosen separately.
      *
      * @throws ResourceNotFoundException if the module does not exist
      */
@@ -249,9 +250,11 @@ public class ModuleService {
                 .map(User::getId)
                 .collect(Collectors.toSet());
 
-        List<ModuleMembers.Member> teachers = userRepository.findByRole(Role.TEACHER).stream()
-                .filter(teacher -> reference == null || !teacher.getId().equals(reference.getId()))
+        List<User> allTeachers = userRepository.findByRole(Role.TEACHER).stream()
                 .sorted(BY_NAME)
+                .toList();
+        List<ModuleMembers.Member> teachers = allTeachers.stream()
+                .filter(teacher -> reference == null || !teacher.getId().equals(reference.getId()))
                 .map(teacher -> new ModuleMembers.Member(UserSummary.from(teacher), enrolledIds.contains(teacher.getId())))
                 .toList();
         List<ModuleMembers.Member> students = userRepository.findByRole(Role.STUDENT).stream()
@@ -262,32 +265,43 @@ public class ModuleService {
         return new ModuleMembers(
                 module.getId(),
                 module.getName(),
-                reference != null ? reference.getFirstName() + " " + reference.getLastName() : null,
+                reference != null ? reference.getId() : null,
+                allTeachers.stream().map(UserSummary::from).toList(),
                 teachers,
                 students);
     }
 
     /**
-     * Sets the teachers and students enrolled in a module: the selected users are enrolled,
-     * the current members who are not selected anymore are unenrolled.
-     * The absences of an unenrolled student are kept.
+     * Sets the reference teacher of a module and the teachers and students enrolled in it:
+     * the selected users are enrolled, the current members who are not selected anymore are unenrolled.
+     * The reference teacher is not enrolled as a regular teacher. The absences of an unenrolled student are kept.
      *
-     * @param moduleId   the module's id
-     * @param teacherIds the teachers that must be enrolled (the reference teacher is ignored)
-     * @param studentIds the students that must be enrolled
+     * @param moduleId           the module's id
+     * @param referenceTeacherId the new reference teacher of the module
+     * @param teacherIds         the teachers that must be enrolled (the reference teacher is ignored)
+     * @param studentIds         the students that must be enrolled
      * @throws ResourceNotFoundException if the module or one of the users does not exist
-     * @throws BusinessException         if a selected teacher is not a teacher or a selected student not a student
+     * @throws BusinessException         if the reference teacher is missing or not a teacher,
+     *                                   or if a selected teacher is not a teacher or a selected student not a student
      */
     @Transactional
-    public void updateMembers(Long moduleId, Collection<Long> teacherIds, Collection<Long> studentIds) {
+    public void updateMembers(Long moduleId, Long referenceTeacherId,
+            Collection<Long> teacherIds, Collection<Long> studentIds) {
         Module module = moduleRepository.findWithStudentsById(moduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Module introuvable : " + moduleId));
 
+        if (referenceTeacherId == null) {
+            throw new BusinessException("L'enseignant référent est obligatoire.");
+        }
+        User reference = userRepository.findById(referenceTeacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Professeur introuvable : " + referenceTeacherId));
+        if (reference.getRole() != Role.TEACHER) {
+            throw new BusinessException("L'utilisateur sélectionné n'est pas un professeur.");
+        }
+
         Set<Long> wantedTeacherIds = teacherIds == null ? new HashSet<>() : new HashSet<>(teacherIds);
         Set<Long> wantedStudentIds = studentIds == null ? new HashSet<>() : new HashSet<>(studentIds);
-        if (module.getReferenceTeacher() != null) {
-            wantedTeacherIds.remove(module.getReferenceTeacher().getId());
-        }
+        wantedTeacherIds.remove(referenceTeacherId);
 
         List<User> wantedUsers = new ArrayList<>();
         wantedUsers.addAll(findUsersWithRole(wantedTeacherIds, Role.TEACHER,
@@ -313,6 +327,8 @@ public class ModuleService {
                 userRepository.save(user);
             }
         }
+        module.setReferenceTeacher(reference);
+        moduleRepository.save(module);
     }
 
     private List<User> findUsersWithRole(Set<Long> ids, Role role, String wrongRoleMessage) {

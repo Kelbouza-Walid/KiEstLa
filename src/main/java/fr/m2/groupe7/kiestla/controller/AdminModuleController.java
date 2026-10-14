@@ -58,10 +58,11 @@ public class AdminModuleController {
 
     @PostMapping("/{id}/members")
     public String updateMembers(@PathVariable Long id,
+            @RequestParam(required = false) Long referenceTeacherId,
             @RequestParam(required = false) List<Long> teacherIds,
             @RequestParam(required = false) List<Long> studentIds,
             RedirectAttributes redirectAttributes) {
-        moduleService.updateMembers(id, teacherIds, studentIds);
+        moduleService.updateMembers(id, referenceTeacherId, teacherIds, studentIds);
         redirectAttributes.addFlashAttribute("successMessage", "Les membres du module ont été mis à jour.");
         return "redirect:/admin/modules/" + id + "/members";
     }

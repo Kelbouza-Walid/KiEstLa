@@ -116,7 +116,9 @@ public class AdminModuleSteps {
         userRepository.deleteAll();
 
         createUser("System", "Admin", "admin", Role.ADMIN);
-        createModule("Mathématiques");
+        Module mathematics = createModule("Mathématiques");
+        mathematics.setReferenceTeacher(createUser("Ada", "Lovelace", "alovelace", Role.TEACHER));
+        moduleRepository.save(mathematics);
         createModule("Algorithmique");
 
         login("admin", "testpassword");

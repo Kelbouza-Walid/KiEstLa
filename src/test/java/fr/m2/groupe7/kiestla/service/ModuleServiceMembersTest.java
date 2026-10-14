@@ -50,7 +50,8 @@ class ModuleServiceMembersTest {
 
         ModuleMembers result = moduleService.getModuleMembers(10L);
 
-        assertEquals("First Bouquet", result.referenceTeacherName());
+        assertEquals(1L, result.referenceTeacherId());
+        assertEquals(List.of(UserSummary.from(reference), UserSummary.from(teacher)), result.referenceTeacherChoices());
         assertEquals(List.of(new ModuleMembers.Member(UserSummary.from(teacher), false)), result.teachers());
         assertEquals(List.of(
                 new ModuleMembers.Member(UserSummary.from(enrolledStudent), true),
@@ -65,10 +66,11 @@ class ModuleServiceMembersTest {
         Module module = createModule(reference);
         enroll(oldTeacher, module);
         when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(reference));
         when(userRepository.findAllById(any())).thenReturn(List.of(newStudent));
 
-        // the reference teacher id is ignored
-        moduleService.updateMembers(10L, List.of(1L), List.of(3L));
+        // the reference teacher is not enrolled as a regular teacher
+        moduleService.updateMembers(10L, 1L, List.of(1L), List.of(3L));
 
         assertTrue(oldTeacher.getModules().isEmpty());
         assertTrue(newStudent.getModules().contains(module));
@@ -80,35 +82,42 @@ class ModuleServiceMembersTest {
 
     @Test
     void updateMembers_keepsMembersStillSelected() {
+        User reference = createUser(1L, "Bouquet", Role.TEACHER);
         User student = createUser(3L, "Faivre", Role.STUDENT);
-        Module module = createModule(null);
+        Module module = createModule(reference);
         enroll(student, module);
         when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(reference));
         when(userRepository.findAllById(any())).thenReturn(List.of(student));
 
-        moduleService.updateMembers(10L, null, List.of(3L));
+        moduleService.updateMembers(10L, 1L, null, List.of(3L));
 
         assertTrue(student.getModules().contains(module));
+        assertSame(reference, module.getReferenceTeacher());
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void updateMembers_studentSelectedAsTeacher() {
-        Module module = createModule(null);
+        User reference = createUser(1L, "Bouquet", Role.TEACHER);
+        Module module = createModule(reference);
         when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(reference));
         when(userRepository.findAllById(any())).thenReturn(List.of(createUser(3L, "Faivre", Role.STUDENT)));
 
-        assertThrows(BusinessException.class, () -> moduleService.updateMembers(10L, List.of(3L), null));
+        assertThrows(BusinessException.class, () -> moduleService.updateMembers(10L, 1L, List.of(3L), null));
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void updateMembers_unknownUser() {
-        Module module = createModule(null);
+        User reference = createUser(1L, "Bouquet", Role.TEACHER);
+        Module module = createModule(reference);
         when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(reference));
         when(userRepository.findAllById(any())).thenReturn(List.of());
 
-        assertThrows(ResourceNotFoundException.class, () -> moduleService.updateMembers(10L, null, List.of(99L)));
+        assertThrows(ResourceNotFoundException.class, () -> moduleService.updateMembers(10L, 1L, null, List.of(99L)));
         verify(userRepository, never()).save(any());
     }
 
@@ -116,7 +125,47 @@ class ModuleServiceMembersTest {
     void updateMembers_unknownModule() {
         when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> moduleService.updateMembers(10L, null, null));
+        assertThrows(ResourceNotFoundException.class, () -> moduleService.updateMembers(10L, 1L, null, null));
+    }
+
+    @Test
+    void updateMembers_changesReferenceTeacher() {
+        User oldReference = createUser(1L, "Bouquet", Role.TEACHER);
+        User newReference = createUser(2L, "Marilleau", Role.TEACHER);
+        Module module = createModule(oldReference);
+        // the new reference teacher was a regular teacher of the module
+        enroll(newReference, module);
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(newReference));
+
+        moduleService.updateMembers(10L, 2L, List.of(2L), null);
+
+        assertSame(newReference, module.getReferenceTeacher());
+        // the new reference teacher is not a regular teacher anymore, the old one is not enrolled
+        assertTrue(newReference.getModules().isEmpty());
+        assertTrue(oldReference.getModules().isEmpty());
+        verify(moduleRepository).save(module);
+    }
+
+    @Test
+    void updateMembers_referenceTeacherRequired() {
+        Module module = createModule(createUser(1L, "Bouquet", Role.TEACHER));
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+
+        assertThrows(BusinessException.class, () -> moduleService.updateMembers(10L, null, null, null));
+        verify(moduleRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMembers_referenceTeacherMustBeATeacher() {
+        User oldReference = createUser(1L, "Bouquet", Role.TEACHER);
+        Module module = createModule(oldReference);
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(createUser(3L, "Faivre", Role.STUDENT)));
+
+        assertThrows(BusinessException.class, () -> moduleService.updateMembers(10L, 3L, null, null));
+        assertSame(oldReference, module.getReferenceTeacher());
+        verify(moduleRepository, never()).save(any());
     }
 
     private void enroll(User user, Module module) {

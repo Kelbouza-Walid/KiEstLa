@@ -103,6 +103,7 @@ class AdminModuleMembersTest {
     @WithMockUser(roles = "ADMIN")
     void adminEnrollsAndUnenrollsMembers() throws Exception {
         mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
+                .param("referenceTeacherId", reference.getId().toString())
                 .param("teacherIds", otherTeacher.getId().toString())
                 .param("studentIds", enrolledStudent.getId().toString(), otherStudent.getId().toString()))
                 .andExpect(status().is3xxRedirection())
@@ -118,7 +119,8 @@ class AdminModuleMembersTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void nothingSelectedUnenrollsEveryone() throws Exception {
-        mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf()))
+        mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
+                .param("referenceTeacherId", reference.getId().toString()))
                 .andExpect(status().is3xxRedirection());
 
         assertTrue(memberLogins().isEmpty());
@@ -134,6 +136,7 @@ class AdminModuleMembersTest {
         absenceRepository.save(absence);
 
         mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
+                .param("referenceTeacherId", reference.getId().toString())
                 .param("teacherIds", enrolledTeacher.getId().toString()))
                 .andExpect(status().is3xxRedirection());
 
@@ -146,11 +149,41 @@ class AdminModuleMembersTest {
     void studentCannotBeEnrolledAsTeacher() throws Exception {
         mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
                 .header("Referer", "/admin/modules/" + module.getId() + "/members")
+                .param("referenceTeacherId", reference.getId().toString())
                 .param("teacherIds", otherStudent.getId().toString()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("errorMessage", "L'utilisateur sélectionné n'est pas un professeur."));
 
         assertEquals(Set.of("members-teacher1", "members-student1"), memberLogins());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminChangesReferenceTeacher() throws Exception {
+        mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
+                .param("referenceTeacherId", otherTeacher.getId().toString())
+                .param("teacherIds", enrolledTeacher.getId().toString(), reference.getId().toString())
+                .param("studentIds", enrolledStudent.getId().toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("successMessage"));
+
+        assertEquals(otherTeacher.getId(), moduleRepository.findById(module.getId()).orElseThrow()
+                .getReferenceTeacher().getId());
+        // the old reference teacher, checked, is now a regular teacher of the module
+        assertEquals(Set.of("members-teacher1", "members-reference", "members-student1"), memberLogins());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void referenceTeacherIsRequired() throws Exception {
+        mockMvc.perform(post("/admin/modules/{id}/members", module.getId()).with(csrf())
+                .header("Referer", "/admin/modules/" + module.getId() + "/members")
+                .param("teacherIds", enrolledTeacher.getId().toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("errorMessage", "L'enseignant référent est obligatoire."));
+
+        assertEquals(reference.getId(), moduleRepository.findById(module.getId()).orElseThrow()
+                .getReferenceTeacher().getId());
     }
 
     @Test
