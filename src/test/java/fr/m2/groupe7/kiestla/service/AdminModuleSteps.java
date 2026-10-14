@@ -1,6 +1,7 @@
 package fr.m2.groupe7.kiestla.service;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -66,6 +67,81 @@ public class AdminModuleSteps {
     public void the_matching_modules_are_displayed() {
         assertThat(getPage().getByTestId("module-row")).hasCount(1);
         assertThat(getPage().getByTestId("module-name")).hasText("Mathématiques");
+    }
+
+    // ---------- add modules (ticket TFKIES26-85) ----------
+
+    @Given("The module information is valid")
+    public void the_module_information_is_valid() {
+        absenceRepository.deleteAll();
+        moduleRepository.deleteAll();
+        userRepository.deleteAll();
+
+        createUser("System", "Admin", "admin", Role.ADMIN);
+        createUser("Marie", "Curie", "mcurie", Role.TEACHER);
+
+        login("admin", "testpassword");
+        getPage().navigate(BASE_URL + "/admin/modules");
+    }
+
+    @When("I enter the module name")
+    public void i_enter_the_module_name() {
+        getPage().getByTestId("input-module-name").fill("Mathématiques");
+    }
+
+    @When("I select a reference teacher")
+    public void i_select_a_reference_teacher() {
+        getPage().getByTestId("select-reference-teacher").selectOption("Marie Curie (mcurie)");
+    }
+
+    @When("I confirm the creation")
+    public void i_confirm_the_creation() {
+        getPage().getByTestId("btn-add-module").click();
+    }
+
+    @Then("The module is registered in the system")
+    public void the_module_is_registered_in_the_system() {
+        assertThat(getPage().getByTestId("success-message")).isVisible();
+        assertThat(getPage().getByTestId("module-row")).hasCount(1);
+        assertThat(getPage().getByTestId("module-name")).hasText("Mathématiques");
+        assertTrue(moduleRepository.findByName("Mathématiques").isPresent());
+    }
+
+    // ---------- remove modules ----------
+
+    @Given("The module exists")
+    public void the_module_exists() {
+        absenceRepository.deleteAll();
+        moduleRepository.deleteAll();
+        userRepository.deleteAll();
+
+        createUser("System", "Admin", "admin", Role.ADMIN);
+        createModule("Mathématiques");
+        createModule("Algorithmique");
+
+        login("admin", "testpassword");
+    }
+
+    @When("I select the module to remove")
+    public void i_select_the_module_to_remove() {
+        getPage().navigate(BASE_URL + "/admin/modules");
+        getPage().getByTestId("input-module-search").fill("Mathématiques");
+        getPage().getByTestId("btn-search-module").click();
+        assertThat(getPage().getByTestId("module-row")).hasCount(1);
+    }
+
+    @When("I confirm the deletion")
+    public void i_confirm_the_deletion() {
+        getPage().onceDialog(dialog -> dialog.accept());
+        getPage().getByTestId("btn-delete-module").click();
+    }
+
+    @Then("The module is no longer registered in the system")
+    public void the_module_is_no_longer_registered_in_the_system() {
+        assertThat(getPage().getByTestId("success-message")).isVisible();
+        assertThat(getPage().getByTestId("module-row")).hasCount(1);
+        assertThat(getPage().getByTestId("module-name")).hasText("Algorithmique");
+        assertTrue(moduleRepository.findByName("Mathématiques").isEmpty());
     }
 
     // ---------- Helpers ----------

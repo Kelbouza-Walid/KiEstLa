@@ -66,6 +66,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public List<UserSummary> getAllTeachers() {
+        return userRepository.findByRole(Role.TEACHER).stream()
+                .map(UserSummary::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<UserSummary> getAvailableStudentsForModule(ModuleDetails module) {
         Set<Long> enrolledStudentIds = module.students().stream()
                 .map(UserSummary::id)

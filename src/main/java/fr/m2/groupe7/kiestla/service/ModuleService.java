@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import fr.m2.groupe7.kiestla.dto.ModuleSummary;
@@ -21,10 +22,13 @@ public class ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
+    private final AbsenceRepository absenceRepository;
 
-    public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository) {
+    public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository,
+            AbsenceRepository absenceRepository) {
         this.moduleRepository = moduleRepository;
         this.userRepository = userRepository;
+        this.absenceRepository = absenceRepository;
     }
 
     /**
@@ -184,6 +188,57 @@ public class ModuleService {
                 .stream()
                 .map(ModuleSummary::from)
                 .toList();
+    }
+
+    /**
+     * Creates a module with its reference teacher.
+     *
+     * @throws BusinessException         if the name is blank or already used, or if
+     *                                   the reference teacher is missing or is not
+     *                                   a teacher
+     * @throws ResourceNotFoundException if the reference teacher does not exist
+     */
+    @Transactional
+    public void createModule(String name, Long referenceTeacherId) {
+        if (name == null || name.isBlank()) {
+            throw new BusinessException("The module name is required.");
+        }
+        if (referenceTeacherId == null) {
+            throw new BusinessException("The reference teacher is required.");
+        }
+        String trimmedName = name.trim();
+        if (moduleRepository.existsByNameIgnoreCase(trimmedName)) {
+            throw new BusinessException("A module with this name already exists.");
+        }
+
+        User referenceTeacher = userRepository.findById(referenceTeacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + referenceTeacherId));
+        if (referenceTeacher.getRole() != Role.TEACHER) {
+            throw new BusinessException("The selected user is not a teacher.");
+        }
+
+        Module module = new Module();
+        module.setName(trimmedName);
+        module.setReferenceTeacher(referenceTeacher);
+        moduleRepository.save(module);
+    }
+
+    /**
+     * Deletes a module, along with its enrollments and its absences.
+     *
+     * @throws ResourceNotFoundException if the module does not exist
+     */
+    @Transactional
+    public void deleteModule(Long id) {
+        Module module = moduleRepository.findWithStudentsById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + id));
+
+        // User owns the enrollments join table: unlink from that side
+        for (User user : module.getEnrolledUsers()) {
+            user.getModules().remove(module);
+        }
+        absenceRepository.deleteByModuleId(id);
+        moduleRepository.delete(module);
     }
 
 }

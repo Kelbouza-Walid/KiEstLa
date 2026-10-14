@@ -31,4 +31,6 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
 
     @EntityGraph(attributePaths = "module")
     List<Absence> findByStudentLoginOrderByDateDesc(String login);
+
+    void deleteByModuleId(Long moduleId);
 }
