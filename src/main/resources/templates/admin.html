@@ -104,6 +104,7 @@
             <th>Last Name</th>
             <th>Login</th>
             <th>Role</th>
+            <th>Actions</th>
         </my_headers>
         <my_rows id="user-rows">
             <tr th:each="user : ${users}">
@@ -114,9 +115,15 @@
                 <td>
                     <span class="badge bg-secondary" data-testid="user-role" th:text="${user.role}"></span>
                 </td>
+                <td>
+                    <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" data-testid="btn-edit-user"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                </td>
             </tr>
             <tr th:if="${#lists.isEmpty(users)}">
-                <td colspan="5" class="text-center text-muted py-3">No users found in the database.</td>
+                <td colspan="6" class="text-center text-muted py-3">No users found in the database.</td>
             </tr>
         </my_rows>
     </div>

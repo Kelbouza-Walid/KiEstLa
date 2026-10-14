@@ -3,8 +3,10 @@ package fr.m2.groupe7.kiestla.controller;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
 import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.dto.UpdateUserRequest;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.exception.BusinessException;
+import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
 import fr.m2.groupe7.kiestla.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,6 +140,99 @@ class AdminControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
         verify(userService, never()).createUser(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void editUser_showsPrefilledForm() throws Exception {
+        AdminUserSummary user = new AdminUserSummary(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        when(userService.getUser(5L)).thenReturn(user);
+
+        mockMvc.perform(get("/admin/users/5/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin-user-edit"))
+                .andExpect(model().attribute("editedUser", user))
+                .andExpect(model().attribute("roles", Role.values()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void editUser_notFound() throws Exception {
+        when(userService.getUser(99L)).thenThrow(new ResourceNotFoundException("Utilisateur introuvable."));
+
+        mockMvc.perform(get("/admin/users/99/edit").header("Referer", "/admin"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("errorMessage", "Utilisateur introuvable."));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void updateUser_success() throws Exception {
+        UpdateUserRequest expected = new UpdateUserRequest("Noa", "Faivre", "nfaivre2", Role.STUDENT);
+        when(userService.updateUser(5L, expected, "admin"))
+                .thenReturn(new AdminUserSummary(5L, "Noa", "Faivre", "nfaivre2", Role.STUDENT));
+
+        performValidUpdate()
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("successMessage", "L'utilisateur nfaivre2 a été modifié."));
+
+        verify(userService).updateUser(5L, expected, "admin");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateUser_blankLogin() throws Exception {
+        mockMvc.perform(post("/admin/users/5").with(csrf())
+                .param("firstName", "Noa")
+                .param("lastName", "Faivre")
+                .param("login", " ")
+                .param("role", "STUDENT"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/users/5/edit"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        verify(userService, never()).updateUser(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateUser_duplicateLogin() throws Exception {
+        when(userService.updateUser(any(), any(), any()))
+                .thenThrow(new BusinessException("Ce login est déjà utilisé."));
+
+        mockMvc.perform(post("/admin/users/5").with(csrf())
+                .header("Referer", "/admin/users/5/edit")
+                .param("firstName", "Noa")
+                .param("lastName", "Faivre")
+                .param("login", "skacmaz")
+                .param("role", "STUDENT"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/users/5/edit"))
+                .andExpect(flash().attribute("errorMessage", "Ce login est déjà utilisé."));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotUpdateUser() throws Exception {
+        performValidUpdate().andExpect(status().isForbidden());
+        verify(userService, never()).updateUser(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotEditUser() throws Exception {
+        mockMvc.perform(get("/admin/users/5/edit")).andExpect(status().isForbidden());
+        verify(userService, never()).getUser(any());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions performValidUpdate() throws Exception {
+        return mockMvc.perform(post("/admin/users/5").with(csrf())
+                .param("firstName", "Noa")
+                .param("lastName", "Faivre")
+                .param("login", "nfaivre2")
+                .param("role", "STUDENT"));
     }
 
     private org.springframework.test.web.servlet.ResultActions performValidCreation() throws Exception {
