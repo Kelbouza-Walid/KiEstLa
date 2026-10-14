@@ -1,8 +1,10 @@
 package fr.m2.groupe7.kiestla.controller;
 
+import fr.m2.groupe7.kiestla.dto.AdminUserDetails;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
 import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.dto.UpdateUserRequest;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.exception.BusinessException;
@@ -41,11 +43,66 @@ class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void index_exposesRoles() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of());
+        when(userService.searchUsers(null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/admin"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("roles", Role.values()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void index_searchesUsers() throws Exception {
+        List<AdminUserSummary> found = List.of(new AdminUserSummary(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT));
+        when(userService.searchUsers("faiv", Role.STUDENT)).thenReturn(found);
+
+        mockMvc.perform(get("/admin").param("q", "faiv").param("role", "STUDENT"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("users", found))
+                .andExpect(model().attribute("searchQuery", "faiv"))
+                .andExpect(model().attribute("searchRole", Role.STUDENT));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void index_emptyRoleMeansAllRoles() throws Exception {
+        when(userService.searchUsers("faiv", null)).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin").param("q", "faiv").param("role", ""))
+                .andExpect(status().isOk());
+
+        verify(userService).searchUsers("faiv", null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void viewUser_showsDetails() throws Exception {
+        AdminUserDetails details = new AdminUserDetails(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT,
+                List.of(new ModuleSummary(1L, "Algorithmique", "Bouquet")), List.of(), 2L);
+        when(userService.getUserDetails(5L)).thenReturn(details);
+
+        mockMvc.perform(get("/admin/users/5"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin-user-details"))
+                .andExpect(model().attribute("userDetails", details));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void viewUser_notFound() throws Exception {
+        when(userService.getUserDetails(99L)).thenThrow(new ResourceNotFoundException("Utilisateur introuvable."));
+
+        mockMvc.perform(get("/admin/users/99").header("Referer", "/admin"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("errorMessage", "Utilisateur introuvable."));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotViewUser() throws Exception {
+        mockMvc.perform(get("/admin/users/5")).andExpect(status().isForbidden());
+        verify(userService, never()).getUserDetails(any());
     }
 
     @Test

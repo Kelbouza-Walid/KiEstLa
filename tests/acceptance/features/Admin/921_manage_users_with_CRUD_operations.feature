@@ -5,6 +5,7 @@ Feature: manage users with CRUD operations
 
   Background: I have already logged in
 
+  @implemented
   Scenario: lookup users
     Given Users exist in the system
     When I search for a user by name or role

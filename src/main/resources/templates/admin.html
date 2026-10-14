@@ -97,6 +97,23 @@
     </div>
 
     <h2 class="mb-3 text-primary">All Users</h2>
+
+    <form th:action="@{/admin}" method="get" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="text" name="q" th:value="${searchQuery}" class="form-control w-auto flex-grow-1"
+               placeholder="Rechercher par prénom, nom ou login" aria-label="Rechercher un utilisateur"
+               data-testid="input-user-search">
+        <select name="role" class="form-select w-auto" aria-label="Filtrer par rôle" data-testid="select-search-role">
+            <option value="">Tous les rôles</option>
+            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"
+                    th:selected="${role == searchRole}"></option>
+        </select>
+        <button type="submit" class="btn btn-primary" data-testid="btn-search-user">
+            <i class="bi bi-search me-1"></i> Rechercher
+        </button>
+        <a th:if="${!#strings.isEmpty(searchQuery) or searchRole != null}" th:href="@{/admin}"
+           class="btn btn-outline-secondary" data-testid="btn-reset-search">Réinitialiser</a>
+    </form>
+
     <div th:replace="~{components :: styled_table(~{::#user-headers}, ~{::#user-rows})}">
         <my_headers id="user-headers">
             <th>ID</th>
@@ -107,7 +124,9 @@
             <th>Actions</th>
         </my_headers>
         <my_rows id="user-rows">
-            <tr th:each="user : ${users}">
+            <tr th:each="user : ${users}" data-testid="user-row"
+                th:onclick="'window.location.href=\'/admin/users/' + ${user.id} + '\''"
+                style="cursor: pointer;">
                 <td data-testid="user-id" th:text="${user.id}"></td>
                 <td data-testid="user-first-name" th:text="${user.firstName}"></td>
                 <td data-testid="user-last-name" th:text="${user.lastName}"></td>
@@ -115,7 +134,7 @@
                 <td>
                     <span class="badge bg-secondary" data-testid="user-role" th:text="${user.role}"></span>
                 </td>
-                <td>
+                <td onclick="event.stopPropagation()" style="cursor: default;">
                     <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" data-testid="btn-edit-user"
                        class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-pencil"></i> Modifier
@@ -123,7 +142,7 @@
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(users)}">
-                <td colspan="6" class="text-center text-muted py-3">No users found in the database.</td>
+                <td colspan="6" data-testid="no-users" class="text-center text-muted py-3">No users found.</td>
             </tr>
         </my_rows>
     </div>

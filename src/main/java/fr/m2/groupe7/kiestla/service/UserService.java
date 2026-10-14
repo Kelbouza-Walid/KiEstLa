@@ -1,9 +1,11 @@
 package fr.m2.groupe7.kiestla.service;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.AdminUserDetails;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
 import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.dto.UpdateUserRequest;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Role;
@@ -17,7 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,6 +49,56 @@ public class UserService {
         return userRepository.findAll().stream()
                 .map(AdminUserSummary::from)
                 .toList();
+    }
+
+    /**
+     * Searches users by name and/or role.
+     *
+     * @param query text to look for in the first name, last name or login (case insensitive), may be blank
+     * @param role  role to filter on, or {@code null} for all roles
+     * @return the matching users, or all users when no criteria is given
+     */
+    @Transactional(readOnly = true)
+    public List<AdminUserSummary> searchUsers(String query, Role role) {
+        boolean noQuery = query == null || query.isBlank();
+        if (noQuery && role == null) {
+            return getAllUsers();
+        }
+        String pattern = "%" + (noQuery ? "" : query.trim().toLowerCase(Locale.ROOT)) + "%";
+        return userRepository.search(pattern, role).stream()
+                .map(AdminUserSummary::from)
+                .toList();
+    }
+
+    /**
+     * Returns everything an administrator can see about a user.
+     *
+     * @param id the user's id
+     * @return the user's information, modules and number of absences
+     * @throws ResourceNotFoundException if the user does not exist
+     */
+    @Transactional(readOnly = true)
+    public AdminUserDetails getUserDetails(Long id) {
+        User user = userRepository.findWithModulesById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+
+        List<ModuleSummary> enrolledModules = user.getModules().stream()
+                .map(ModuleSummary::from)
+                .sorted(Comparator.comparing(ModuleSummary::name))
+                .toList();
+        List<ModuleSummary> referencedModules = moduleRepository.findByReferenceTeacherIdOrderByName(id).stream()
+                .map(ModuleSummary::from)
+                .toList();
+
+        return new AdminUserDetails(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getLogin(),
+                user.getRole(),
+                enrolledModules,
+                referencedModules,
+                absenceRepository.countByStudentId(id));
     }
 
     /**

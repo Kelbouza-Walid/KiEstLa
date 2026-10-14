@@ -12,9 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.AdminUserDetails;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
 import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.dto.UpdateUserRequest;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Module;
@@ -317,6 +319,92 @@ class UserServiceTest {
 
         assertEquals(Role.STUDENT, student.getRole());
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void searchUsers_noCriteriaReturnsAllUsers() {
+        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
+        when(userRepository.findAll()).thenReturn(List.of(admin));
+
+        List<AdminUserSummary> result = userService.searchUsers("  ", null);
+
+        assertEquals(List.of(AdminUserSummary.from(admin)), result);
+        verify(userRepository, never()).search(any(), any());
+    }
+
+    @Test
+    void searchUsers_byName() {
+        User student = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        when(userRepository.search("%faiv%", null)).thenReturn(List.of(student));
+
+        List<AdminUserSummary> result = userService.searchUsers(" FAIV ", null);
+
+        assertEquals(List.of(AdminUserSummary.from(student)), result);
+    }
+
+    @Test
+    void searchUsers_byRoleOnly() {
+        User teacher = createUser(10L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
+        when(userRepository.search("%%", Role.TEACHER)).thenReturn(List.of(teacher));
+
+        List<AdminUserSummary> result = userService.searchUsers(null, Role.TEACHER);
+
+        assertEquals(List.of(AdminUserSummary.from(teacher)), result);
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    void searchUsers_byNameAndRole() {
+        when(userRepository.search("%f%", Role.STUDENT)).thenReturn(List.of());
+
+        assertTrue(userService.searchUsers("f", Role.STUDENT).isEmpty());
+        verify(userRepository).search("%f%", Role.STUDENT);
+    }
+
+    @Test
+    void getUserDetails_student() {
+        User student = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        Module physics = createModule(2L, "Physique");
+        Module algorithms = createModule(1L, "Algorithmique");
+        student.getModules().add(physics);
+        student.getModules().add(algorithms);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(student));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(5L)).thenReturn(List.of());
+        when(absenceRepository.countByStudentId(5L)).thenReturn(3L);
+
+        AdminUserDetails result = userService.getUserDetails(5L);
+
+        assertEquals(new AdminUserDetails(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT,
+                List.of(ModuleSummary.from(algorithms), ModuleSummary.from(physics)), List.of(), 3L), result);
+    }
+
+    @Test
+    void getUserDetails_referenceTeacher() {
+        User teacher = createUser(10L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
+        Module module = createModule(1L, "Test fonctionnel");
+        module.setReferenceTeacher(teacher);
+        when(userRepository.findWithModulesById(10L)).thenReturn(Optional.of(teacher));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(10L)).thenReturn(List.of(module));
+        when(absenceRepository.countByStudentId(10L)).thenReturn(0L);
+
+        AdminUserDetails result = userService.getUserDetails(10L);
+
+        assertEquals(List.of(new ModuleSummary(1L, "Test fonctionnel", "Bouquet")), result.referencedModules());
+        assertTrue(result.enrolledModules().isEmpty());
+    }
+
+    @Test
+    void getUserDetails_notFound() {
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUserDetails(5L));
+    }
+
+    private Module createModule(Long id, String name) {
+        Module module = new Module();
+        module.setId(id);
+        module.setName(name);
+        return module;
     }
 
     private User createUser(Long id, String firstName, String lastName, String login, Role role) {

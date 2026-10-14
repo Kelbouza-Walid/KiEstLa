@@ -17,6 +17,8 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
 
 	boolean existsByStudentId(Long studentId);
 
+	long countByStudentId(Long studentId);
+
 	List<Absence> findByModuleId(Long moduleId);
 
 	@EntityGraph(attributePaths = "student")
