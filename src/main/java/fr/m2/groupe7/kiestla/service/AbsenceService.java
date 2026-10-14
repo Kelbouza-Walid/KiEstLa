@@ -1,20 +1,16 @@
 package fr.m2.groupe7.kiestla.service;
 
 import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
-import fr.m2.groupe7.kiestla.dto.AddCommentRequest;
-import fr.m2.groupe7.kiestla.dto.CommentSummary;
 import fr.m2.groupe7.kiestla.dto.JustifyAbsenceRequest;
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.dto.StudentAbsenceSummary;
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
-import fr.m2.groupe7.kiestla.entity.Comment;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.exception.BusinessException;
 import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
-import fr.m2.groupe7.kiestla.repository.CommentRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import org.springframework.data.domain.Sort;
@@ -22,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,18 +27,15 @@ public class AbsenceService {
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
     private final ModuleService moduleService;
-    private final CommentRepository commentRepository;
 
     public AbsenceService(AbsenceRepository absenceRepository,
             ModuleRepository moduleRepository,
             UserRepository userRepository,
-            ModuleService moduleService,
-            CommentRepository commentRepository) {
+            ModuleService moduleService) {
         this.absenceRepository = absenceRepository;
         this.moduleRepository = moduleRepository;
         this.userRepository = userRepository;
         this.moduleService = moduleService;
-        this.commentRepository = commentRepository;
     }
 
     /**
@@ -64,35 +56,6 @@ public class AbsenceService {
                 .stream()
                 .map(AbsenceSummary::from)
                 .toList();
-    }
-
-    /**
-     * Retrives all the comments for an absence.
-     * The oldest one is first.
-     */
-    public List<CommentSummary> getCommentsForAbsence(Long id) {
-        return commentRepository.findByAbsenceIdOrderByDateAsc(id)
-                .stream()
-                .map(CommentSummary::from)
-                .toList();
-    }
-
-    /**
-     * Adds a comment written by the given user to an absence.
-     */
-    @Transactional
-    public void addComment(Long absenceId, String commenterLogin, AddCommentRequest commentReq) {
-        Absence absence = absenceRepository.findById(absenceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + absenceId));
-        User commenter = userRepository.findByLogin(commenterLogin)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable : " + commenterLogin));
-
-        Comment comment = new Comment();
-        comment.setAbsence(absence);
-        comment.setCommenter(commenter);
-        comment.setDate(LocalDateTime.now());
-        comment.setComment(commentReq.comment());
-        commentRepository.save(comment);
     }
 
     /**

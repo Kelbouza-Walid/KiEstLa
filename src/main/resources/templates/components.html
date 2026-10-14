@@ -20,12 +20,12 @@
 <!--
     Comments side panel for absences.
     Opened by any button with data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" data-absence-id="...".
-    baseUrl: absence endpoint prefix (e.g. /secretary/absence), comments are at {baseUrl}/{id}/comments
+    Comments are served by CommentController, which only gives access to secretaries and to the teachers of the absence's module.
     openFor: absence id whose panel is reopened on page load (after posting a comment), or null
     errorMessage: comment validation error to display, or null
 -->
-<div th:fragment="comments_panel(baseUrl, openFor, errorMessage)" class="offcanvas offcanvas-end" tabindex="-1"
-     id="commentsPanel" data-testid="comments-panel" th:data-base-url="${baseUrl}" th:data-open-for="${openFor}">
+<div th:fragment="comments_panel(openFor, errorMessage)" class="offcanvas offcanvas-end" tabindex="-1"
+     id="commentsPanel" data-testid="comments-panel" th:data-base-url="@{/absences}" th:data-open-for="${openFor}">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Comments</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -43,12 +43,34 @@
     <script th:src="@{/js/comments-panel.js}" defer></script>
 </div>
 
-<!-- Comment list of an absence, loaded into the comments panel -->
+<!--
+    Comment list of an absence, loaded into the comments panel.
+    Only the author of a comment can edit or delete it.
+-->
 <div th:fragment="comment_list">
     <p th:if="${#lists.isEmpty(comments)}" class="text-muted" data-testid="no-comments">No comments yet.</p>
     <div th:each="c : ${comments}" class="border-bottom py-2" data-testid="absence-comment">
-        <strong data-testid="comment-author" th:text="${c.userFirstName + ' ' + c.userLastName}"></strong>
+        <div class="d-flex justify-content-between align-items-center">
+            <strong data-testid="comment-author" th:text="${c.userFirstName + ' ' + c.userLastName}"></strong>
+            <div th:if="${c.userLogin == #authentication.name}" class="d-flex">
+                <button type="button" data-testid="btn-edit-comment" data-comment-action="edit"
+                        class="btn btn-sm btn-link p-0 me-2">Edit</button>
+                <form th:action="@{/comments/{id}/delete(id=${c.id})}" method="post" class="m-0"
+                      onsubmit="return confirm('Are you sure you want to delete this comment ?');">
+                    <button type="submit" data-testid="btn-delete-comment" class="btn btn-sm btn-link text-danger p-0">Delete</button>
+                </form>
+            </div>
+        </div>
         <p class="mb-0" data-testid="comment-text" th:text="${c.comment}" style="white-space: pre-wrap;"></p>
+        <form th:if="${c.userLogin == #authentication.name}" th:action="@{/comments/{id}/edit(id=${c.id})}"
+              method="post" class="d-none" data-testid="edit-comment-form">
+            <textarea name="comment" data-testid="input-edit-comment" class="form-control mb-2" rows="3" maxlength="2000"
+                      th:text="${c.comment}"></textarea>
+            <div class="d-flex justify-content-end">
+                <button type="button" data-comment-action="cancel" class="btn btn-sm btn-secondary me-2">Cancel</button>
+                <button type="submit" data-testid="btn-save-edit-comment" class="btn btn-sm btn-primary">Save</button>
+            </div>
+        </form>
     </div>
 </div>
 </html>

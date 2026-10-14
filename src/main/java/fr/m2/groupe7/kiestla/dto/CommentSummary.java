@@ -7,11 +7,13 @@ import fr.m2.groupe7.kiestla.entity.Comment;
  */
 public record CommentSummary(
 		Long id,
+		String userLogin,
 		String userFirstName,
 		String userLastName,
 		String comment) {
 
 	public static CommentSummary from(Comment c) {
-		return new CommentSummary(c.getId(), c.getCommenter().getFirstName(), c.getCommenter().getLastName(), c.getComment());
+		return new CommentSummary(c.getId(), c.getCommenter().getLogin(), c.getCommenter().getFirstName(),
+				c.getCommenter().getLastName(), c.getComment());
 	}
 }

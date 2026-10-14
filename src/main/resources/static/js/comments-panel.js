@@ -13,7 +13,22 @@
         form.action = url;
         body.innerHTML = '';
         const res = await fetch(url);
-        body.innerHTML = await res.text();
+        if (res.ok) {
+            body.innerHTML = await res.text();
+        } else {
+            body.innerHTML = '<p class="text-danger" data-testid="comments-load-error">Unable to load the comments.</p>';
+        }
+    });
+
+    // Toggle between the text of a comment and its edit form
+    body.addEventListener('click', (e) => {
+        const action = e.target.dataset.commentAction;
+        if (action !== 'edit' && action !== 'cancel') return;
+        const comment = e.target.closest('[data-testid="absence-comment"]');
+        const editForm = comment.querySelector('[data-testid="edit-comment-form"]');
+        if (action === 'cancel') editForm.reset();
+        comment.querySelector('[data-testid="comment-text"]').classList.toggle('d-none', action === 'edit');
+        editForm.classList.toggle('d-none', action === 'cancel');
     });
 
     // The error only concerns the absence it was raised for

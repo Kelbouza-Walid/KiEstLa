@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * AddCommentRequest
+ * CommentRequest
  */
-public record AddCommentRequest(
+public record CommentRequest(
 		@NotBlank @Size(max = 2000) String comment) {
 }
