@@ -49,7 +49,7 @@ public class ModuleDetailsController {
         boolean isStudent = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_STUDENT"));
         boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_Admin"));
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
         ModuleDetails module = isTeacher
                 ? moduleService.getModuleDetailsForTeacher(id, authentication.getName())
                 : moduleService.getModuleDetails(id);
@@ -63,8 +63,12 @@ public class ModuleDetailsController {
         model.addAttribute("absences", absences);
         model.addAttribute("isStudent", isStudent);
         model.addAttribute("isTeacher", isTeacher);
+        model.addAttribute("isStudent", isStudent);
+        model.addAttribute("isTeacher", isTeacher);
+        model.addAttribute("isSecretary", isSecretary);
+        model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isReferenceTeacher", isReferenceTeacher);
-        model.addAttribute("backUrl", isTeacher ? "/teacher" : isSecretary? "/secretary" : isAdmin? "/admin" : "/student");
+        model.addAttribute("backUrl", isTeacher? "/teacher" : isSecretary? "/secretary" : isAdmin? "/admin/modules" : "/student");
         if (isTeacher) {
             model.addAttribute("availableStudents", userService.getAvailableStudentsForModule(module));
             if (isReferenceTeacher) {
