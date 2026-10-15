@@ -53,7 +53,7 @@ class AbsenceServiceTest {
     @Test
     void getAbsences_basic() {
         Absence absence = createAbsence(1L, "Noam", "Faivre", LocalDate.of(2026, 10, 1), AbsenceStatus.UNJUSTIFIED,
-                null);
+                null, null);
         when(absenceRepository.findAllByOrderByDateDesc()).thenReturn(List.of(absence));
 
         List<AbsenceSummary> summaries = absenceService.getAbsences();
@@ -63,14 +63,15 @@ class AbsenceServiceTest {
         assertEquals("Noam Faivre", summaries.get(0).studentName());
         assertEquals(LocalDate.of(2026, 10, 1), summaries.get(0).date());
         assertEquals(AbsenceStatus.UNJUSTIFIED, summaries.get(0).status());
-        assertNull(summaries.get(0).justification());
+        assertNull(summaries.get(0).motiveTitle());
+        assertNull(summaries.get(0).motiveDescription());
         verify(absenceRepository).findAllByOrderByDateDesc();
     }
 
     @Test
     void getAbsencesForModule_basic() {
         Absence absence = createAbsence(2L, "Suleyman", "Kacmaz", LocalDate.of(2026, 10, 2), AbsenceStatus.JUSTIFIED,
-                "Certificat médical");
+                "Malade", "Certificat médical");
         when(absenceRepository.findByModuleId(10L)).thenReturn(List.of(absence));
 
         List<AbsenceSummary> summaries = absenceService.getAbsencesForModule(10L);
@@ -79,21 +80,23 @@ class AbsenceServiceTest {
         assertEquals(2L, summaries.get(0).id());
         assertEquals("Suleyman Kacmaz", summaries.get(0).studentName());
         assertEquals(AbsenceStatus.JUSTIFIED, summaries.get(0).status());
-        assertEquals("Certificat médical", summaries.get(0).justification());
+        assertEquals("Malade", summaries.get(0).motiveTitle());
+        assertEquals("Certificat médical", summaries.get(0).motiveDescription());
         verify(absenceRepository).findByModuleId(10L);
     }
 
     @Test
     void justifyAbsence_basic() {
         Absence absence = createAbsence(1L, "Mathis", "Regazzoni", LocalDate.of(2026, 10, 1), AbsenceStatus.UNJUSTIFIED,
-                null);
+                null, null);
         when(absenceRepository.findById(1L)).thenReturn(Optional.of(absence));
 
-        JustifyAbsenceRequest request = new JustifyAbsenceRequest("Rendez-vous médical");
+        JustifyAbsenceRequest request = new JustifyAbsenceRequest("Sick", "Caught a cold");
         absenceService.justifyAbsence(1L, request);
 
         assertEquals(AbsenceStatus.JUSTIFIED, absence.getStatus());
-        assertEquals("Rendez-vous médical", absence.getJustification());
+        assertEquals("Sick", absence.getMotiveTitle());
+        assertEquals("Caught a cold", absence.getMotiveDescription());
         verify(absenceRepository).findById(1L);
     }
 
@@ -101,7 +104,7 @@ class AbsenceServiceTest {
     void justifyAbsence_absenceNotFound() {
         when(absenceRepository.findById(99L)).thenReturn(Optional.empty());
 
-        JustifyAbsenceRequest request = new JustifyAbsenceRequest("Raison");
+        JustifyAbsenceRequest request = new JustifyAbsenceRequest("Raison", "Description");
 
         assertThrows(ResourceNotFoundException.class, () -> absenceService.justifyAbsence(99L, request));
     }
@@ -109,13 +112,14 @@ class AbsenceServiceTest {
     @Test
     void unjustifyAbsence_basic() {
         Absence absence = createAbsence(1L, "Gaspard", "Quentin", LocalDate.of(2026, 10, 1), AbsenceStatus.JUSTIFIED,
-                "Raison passée");
+                "Raison passée", "Description passée");
         when(absenceRepository.findById(1L)).thenReturn(Optional.of(absence));
 
         absenceService.unjustifyAbsence(1L);
 
         assertEquals(AbsenceStatus.UNJUSTIFIED, absence.getStatus());
-        assertNull(absence.getJustification());
+        assertNull(absence.getMotiveTitle());
+        assertNull(absence.getMotiveDescription());
         verify(absenceRepository).findById(1L);
     }
 
@@ -196,7 +200,7 @@ class AbsenceServiceTest {
     }
 
     private Absence createAbsence(Long id, String firstName, String lastName, LocalDate date, AbsenceStatus status,
-                                  String justification) {
+                                  String motiveTitle, String motiveDescription) {
         User student = new User();
         student.setFirstName(firstName);
         student.setLastName(lastName);
@@ -206,7 +210,8 @@ class AbsenceServiceTest {
         absence.setStudent(student);
         absence.setDate(date);
         absence.setStatus(status);
-        absence.setJustification(justification);
+        absence.setMotiveTitle(motiveTitle);
+        absence.setMotiveDescription(motiveDescription);
         return absence;
     }
 }

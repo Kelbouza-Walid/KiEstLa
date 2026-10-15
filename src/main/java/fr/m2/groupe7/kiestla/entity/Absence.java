@@ -4,10 +4,12 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "absences")
-@Getter @Setter
+@Getter
+@Setter
 public class Absence {
 
     @Id
@@ -29,7 +31,13 @@ public class Absence {
     @Column(nullable = false)
     private AbsenceStatus status = AbsenceStatus.UNJUSTIFIED;
 
+    @Column(length = 100)
+    private String motiveTitle;
+
     @Column(length = 2000)
-    private String justification;
+    private String motiveDescription;
+
+    @OneToMany(mappedBy = "absence", cascade = CascadeType.REMOVE)
+    private List<Comment> comments;
 
 }

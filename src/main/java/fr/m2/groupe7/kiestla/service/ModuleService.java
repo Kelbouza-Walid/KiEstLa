@@ -111,7 +111,7 @@ public class ModuleService {
      * @throws ResourceNotFoundException if the user or module does not exist
      * @throws BusinessException         if the teacher has no access to the module
      */
-    private Module verifyTeacherAccess(Long moduleId, String teacherLogin) {
+    public Module verifyTeacherAccess(Long moduleId, String teacherLogin) {
         User teacher = userRepository.findModulesByLogin(teacherLogin)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé : " + teacherLogin));
 

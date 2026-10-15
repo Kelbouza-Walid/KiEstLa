@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
@@ -19,10 +21,12 @@ import com.microsoft.playwright.Page;
 
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
+import fr.m2.groupe7.kiestla.entity.Comment;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
+import fr.m2.groupe7.kiestla.repository.CommentRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
@@ -37,7 +41,13 @@ public class SecretaryAbsenceSteps {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private CommentRepository commentRepository;
+
     private Long currentAbsenceId;
+
+    // Only set once the justification form has been opened (not the case for an already justified absence)
+    private boolean motiveFormOpened = false;
 
     private Page getPage() {
         return PlaywrightHooks.getPage();
@@ -96,13 +106,16 @@ public class SecretaryAbsenceSteps {
     public void i_enter_the_motive_for_the_absence() {
         getPage().navigate("http://localhost:8080/secretary");
         getPage().getByTestId("btn-add-justification").click();
-        getPage().getByTestId("input-justification-text").fill("Lazy");
+        getPage().getByTestId("input-motive-title").fill("Sick");
+        motiveFormOpened = true;
     }
 
     @When("I add a corresponding description")
     public void i_add_a_corresponding_description() {
-        // TODO: implement this
-        // throw new PendingException();
+        if (!motiveFormOpened) {
+            return;
+        }
+        getPage().getByTestId("input-motive-description").fill("Caught a cold");
     }
 
     @When("I set the absence as justified")
@@ -113,10 +126,13 @@ public class SecretaryAbsenceSteps {
     @Then("The absence is registered as justified")
     public void the_absence_is_registered_as_justified() {
         assertThat(getPage().getByTestId("absence-status")).hasText("JUSTIFIED");
-        assertThat(getPage().getByTestId("absence-justification")).hasText("Lazy");
+        assertThat(getPage().getByTestId("absence-motive-title")).hasText("Sick");
+        assertThat(getPage().getByTestId("absence-motive-description")).hasText("Caught a cold");
 
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.JUSTIFIED, updated.getStatus());
+        assertEquals("Sick", updated.getMotiveTitle());
+        assertEquals("Caught a cold", updated.getMotiveDescription());
     }
 
     // --- Scenario: Changing a justified absence to unjustified (1184) ---
@@ -142,7 +158,8 @@ public class SecretaryAbsenceSteps {
         absence.setModule(module);
         absence.setDate(LocalDate.now());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
-        absence.setJustification("Medical thing");
+        absence.setMotiveTitle("Medical");
+        absence.setMotiveDescription("Medical thing");
         Absence saved = absenceRepository.save(absence);
 
         this.currentAbsenceId = saved.getId();
@@ -164,6 +181,147 @@ public class SecretaryAbsenceSteps {
         assertThat(getPage().getByTestId("absence-status")).hasText("UNJUSTIFIED");
         Absence updated = absenceRepository.findById(currentAbsenceId).get();
         assertEquals(AbsenceStatus.UNJUSTIFIED, updated.getStatus());
-        assertNull(updated.getJustification());
+        assertNull(updated.getMotiveTitle());
+        assertNull(updated.getMotiveDescription());
+    }
+
+    // --- Scenario: Adding a comment to an absence (1171) ---
+
+    @Given("The absence has no comment from me")
+    public void the_absence_has_no_comment_from_me() {
+        absenceRepository.deleteAll();
+
+        User student = new User();
+        student.setFirstName("Gaspard");
+        student.setLastName("Quentin");
+        student.setLogin("gquentin");
+        student.setPassword("pwd");
+        student.setRole(Role.STUDENT);
+        student = userRepository.save(student);
+
+        Module module = new Module();
+        module.setName("Functionnal testing");
+        moduleRepository.save(module);
+
+        Absence absence = new Absence();
+        absence.setStudent(student);
+        absence.setModule(module);
+        absence.setDate(LocalDate.now());
+        absence.setStatus(AbsenceStatus.UNJUSTIFIED);
+        Absence saved = absenceRepository.save(absence);
+
+        this.currentAbsenceId = saved.getId();
+    }
+
+    @When("I write a comment")
+    public void i_write_a_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+        getPage().getByTestId("input-comment").fill("Called the parents");
+    }
+
+    @When("I save the comment")
+    public void i_save_the_comment() {
+        getPage().getByTestId("btn-save-comment").click();
+    }
+
+    @Then("The comment is displayed on the absence")
+    public void the_comment_is_displayed_on_the_absence() {
+        assertThat(getPage().getByTestId("comment-author")).hasText("FirstName LastName");
+        assertThat(getPage().getByTestId("comment-text")).hasText("Called the parents");
+
+        List<Comment> comments = commentRepository.findByAbsenceIdOrderByDateAsc(currentAbsenceId);
+        assertEquals(1, comments.size());
+        assertEquals("Called the parents", comments.get(0).getComment());
+        assertEquals("secretary", comments.get(0).getCommenter().getLogin());
+    }
+
+    // --- Scenario: Attempting to save an empty comment (1186) ---
+
+    @When("I try to save an empty comment")
+    public void i_try_to_save_an_empty_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+        getPage().getByTestId("input-comment").fill("   ");
+        getPage().getByTestId("btn-save-comment").click();
+    }
+
+    @Then("The comment is not saved")
+    public void the_comment_is_not_saved() {
+        assertThat(getPage().getByTestId("no-comments")).isVisible();
+        assertEquals(0, commentRepository.findByAbsenceIdOrderByDateAsc(currentAbsenceId).size());
+    }
+
+    @Then("I see an error message indicating the comment cannot be empty")
+    public void i_see_an_error_message_indicating_the_comment_cannot_be_empty() {
+        assertThat(getPage().getByTestId("comment-error"))
+                .hasText("Le commentaire ne peut pas être vide (2000 caractères maximum).");
+    }
+
+    // --- Scenario: Editing my own comment (1173) ---
+
+    @Given("The absence has a comment I previously wrote")
+    public void the_absence_has_a_comment_i_previously_wrote() {
+        the_absence_has_no_comment_from_me();
+        saveComment(userRepository.findByLogin("secretary").orElseThrow(), "Called the parents");
+    }
+
+    @When("I edit my comment")
+    public void i_edit_my_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+        getPage().getByTestId("btn-edit-comment").click();
+        getPage().getByTestId("input-edit-comment").fill("Called the parents twice");
+    }
+
+    @When("I save the changes")
+    public void i_save_the_changes() {
+        getPage().getByTestId("btn-save-edit-comment").click();
+    }
+
+    @Then("The updated comment is displayed on the absence")
+    public void the_updated_comment_is_displayed_on_the_absence() {
+        assertThat(getPage().getByTestId("comment-text")).hasText("Called the parents twice");
+
+        List<Comment> comments = commentRepository.findByAbsenceIdOrderByDateAsc(currentAbsenceId);
+        assertEquals(1, comments.size());
+        assertEquals("Called the parents twice", comments.get(0).getComment());
+    }
+
+    // --- Scenario: Attempting to edit another user's comment (1172) ---
+
+    @Given("The absence has a comment written by another user")
+    public void the_absence_has_a_comment_written_by_another_user() {
+        the_absence_has_no_comment_from_me();
+
+        User otherSecretary = new User();
+        otherSecretary.setFirstName("Other");
+        otherSecretary.setLastName("Secretary");
+        otherSecretary.setLogin("other-secretary");
+        otherSecretary.setPassword("pwd");
+        otherSecretary.setRole(Role.SECRETARY);
+        saveComment(userRepository.save(otherSecretary), "Student was sick");
+    }
+
+    @When("I try to edit that comment")
+    public void i_try_to_edit_that_comment() {
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("btn-see-comments").click();
+    }
+
+    @Then("I am not allowed to modify it")
+    public void i_am_not_allowed_to_modify_it() {
+        assertThat(getPage().getByTestId("comment-text")).hasText("Student was sick");
+        assertThat(getPage().getByTestId("btn-edit-comment")).hasCount(0);
+        assertThat(getPage().getByTestId("btn-delete-comment")).hasCount(0);
+    }
+
+    private void saveComment(User commenter, String text) {
+        Comment comment = new Comment();
+        comment.setAbsence(absenceRepository.findById(currentAbsenceId).orElseThrow());
+        comment.setCommenter(commenter);
+        comment.setDate(LocalDateTime.now());
+        comment.setComment(text);
+        commentRepository.save(comment);
     }
 }

@@ -68,6 +68,20 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotAccessCommentEndpoints() throws Exception {
+        mockMvc.perform(get("/absences/1/comments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCannotAccessCommentEndpoints() throws Exception {
+        mockMvc.perform(get("/absences/1/comments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void unauthenticatedUserIsRedirectedToLogin() throws Exception {
         mockMvc.perform(get("/teacher"))
                 .andExpect(status().is3xxRedirection())

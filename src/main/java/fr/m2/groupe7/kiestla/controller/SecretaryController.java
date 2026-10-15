@@ -42,7 +42,7 @@ public class SecretaryController {
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "La justification est invalide (vide ou trop longue).");
+                    "Le motif est invalide (titre ou description vide ou trop long).");
             return "redirect:/secretary";
         }
         absenceService.justifyAbsence(id, justificationReq);

@@ -100,7 +100,8 @@
                 <th>Student</th>
                 <th>Date</th>
                 <th>Status</th>
-                <th>Justification</th>
+                <th>Motive</th>
+                <th>Description</th>
             </my_headers>
             <my_rows id="rowsAbsences">
                 <tr th:each="absence : ${absences}">
@@ -112,10 +113,11 @@
                               th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
                               th:text="${absence.status}"></span>
                     </td>
-                    <td data-testid="absence-justification" th:text="${absence.justification}"></td>
+                    <td data-testid="absence-motive-title" th:text="${absence.motiveTitle}"></td>
+                    <td data-testid="absence-motive-description" th:text="${absence.motiveDescription}"></td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(absences)}">
-                    <td colspan="5" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
+                    <td colspan="6" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
                 </tr>
             </my_rows>
         </div>

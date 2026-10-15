@@ -29,9 +29,9 @@ public class AbsenceService {
     private final ModuleService moduleService;
 
     public AbsenceService(AbsenceRepository absenceRepository,
-                          ModuleRepository moduleRepository,
-                          UserRepository userRepository,
-                          ModuleService moduleService) {
+            ModuleRepository moduleRepository,
+            UserRepository userRepository,
+            ModuleService moduleService) {
         this.absenceRepository = absenceRepository;
         this.moduleRepository = moduleRepository;
         this.userRepository = userRepository;
@@ -59,19 +59,21 @@ public class AbsenceService {
     }
 
     /**
-     * Adds a justification to an absence and marks its status as JUSTIFIED.
+     * Adds a motive (title and description) to an absence and marks its status as
+     * JUSTIFIED.
      */
     @Transactional
     public void justifyAbsence(Long id, JustifyAbsenceRequest justificationReq) {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
 
-        absence.setJustification(justificationReq.justification());
+        absence.setMotiveTitle(justificationReq.motiveTitle());
+        absence.setMotiveDescription(justificationReq.motiveDescription());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
     }
 
     /**
-     * Removes the justification from an absence and reverts its status to
+     * Removes the motive from an absence and reverts its status to
      * UNJUSTIFIED.
      */
     @Transactional
@@ -79,14 +81,18 @@ public class AbsenceService {
         Absence absence = absenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable avec l'ID : " + id));
 
-        absence.setJustification(null);
+        absence.setMotiveTitle(null);
+        absence.setMotiveDescription(null);
         absence.setStatus(AbsenceStatus.UNJUSTIFIED);
     }
 
     /**
      * add unjustfied absence for student in module
-     * @throws ResourceNotFoundException if the module or the teacher or the student dont exsist
-     * @throws BusinessException         if the teacher dont have access to the module
+     * 
+     * @throws ResourceNotFoundException if the module or the teacher or the student
+     *                                   dont exsist
+     * @throws BusinessException         if the teacher dont have access to the
+     *                                   module
      *
      */
     @Transactional

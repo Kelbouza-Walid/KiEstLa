@@ -7,5 +7,6 @@ import jakarta.validation.constraints.Size;
  * JustifyAbsenceRequest
  */
 public record JustifyAbsenceRequest(
-		@NotBlank @Size(max = 2000) String justification) {
+		@NotBlank @Size(max = 100) String motiveTitle,
+		@NotBlank @Size(max = 2000) String motiveDescription) {
 }

@@ -13,11 +13,12 @@ public record AbsenceSummary(
 		String studentName,
 		LocalDate date,
 		AbsenceStatus status,
-		String justification) {
+		String motiveTitle,
+		String motiveDescription) {
 
 	public static AbsenceSummary from(Absence a) {
 		return new AbsenceSummary(a.getId(),
 				a.getStudent().getFirstName() + " " + a.getStudent().getLastName(),
-				a.getDate(), a.getStatus(), a.getJustification());
+				a.getDate(), a.getStatus(), a.getMotiveTitle(), a.getMotiveDescription());
 	}
 }
