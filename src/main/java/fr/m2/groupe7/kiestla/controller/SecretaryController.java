@@ -2,15 +2,12 @@ package fr.m2.groupe7.kiestla.controller;
 
 import java.util.List;
 
+import fr.m2.groupe7.kiestla.service.AbsenteeService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
@@ -28,10 +25,13 @@ public class SecretaryController {
 
     private final AbsenceService absenceService;
     private final ModuleService moduleService;
+    private final AbsenteeService absenteeService;
 
-    public SecretaryController(AbsenceService absenceService, ModuleService moduleService) {
+    public SecretaryController(AbsenceService absenceService, ModuleService moduleService,
+                               AbsenteeService absenteeService) {
         this.absenceService = absenceService;
         this.moduleService = moduleService;
+        this.absenteeService = absenteeService;
     }
 
     @PostMapping("/absence/{id}/justify")
@@ -66,13 +66,19 @@ public class SecretaryController {
      * @return the name of the Thymeleaf template to render
      */
     @GetMapping
-    public String index(Model model) {
+    public String index(@RequestParam(required = false) Long moduleId,
+                        @RequestParam(required = false) String student,
+                        @RequestParam(defaultValue = "MODULE") AbsenteeService.SortBy sort,
+                        Model model) {
         List<AbsenceSummary> absences = absenceService.getAbsences();
-
         List<ModuleSummary> modules = moduleService.getAllModulesSummary();
 
         model.addAttribute("absences", absences);
         model.addAttribute("modules", modules);
+        model.addAttribute("absentees", absenteeService.getAbsenteesForSecretary(moduleId, student, sort));
+        model.addAttribute("selectedModuleId", moduleId);
+        model.addAttribute("studentQuery", student);
+        model.addAttribute("sort", sort.name());
         return "secretary";
     }
 }

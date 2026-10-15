@@ -101,10 +101,16 @@ public class SecretaryModuleDetailsSteps {
     }
 
     @Then("The list is empty")
-    public void the_list_is_empty() { //
-        assertThat(getPage().getByTestId("module-status")).hasText("No absences found for this module.");
+    public void the_list_is_empty() {
+        if (getPage().url().contains("/module-details/")) {
+            // Feature 1183: absences of a module
+            assertThat(getPage().getByTestId("module-status")).hasText("No absences found for this module.");
+        } else {
+            // Feature 1182: follow-up list of the secretary page
+            assertThat(getPage().getByTestId("absentee-row")).hasCount(0);
+            assertThat(getPage().getByTestId("no-absentees")).isVisible();
+        }
     }
-
     // =====================================================================
     // Feature 959: Viewing module absences sorted by student
     // =====================================================================
@@ -119,9 +125,8 @@ public class SecretaryModuleDetailsSteps {
 
     @When("I sort the list by student")
     public void i_sort_the_list_by_student() {
-        // TODO: Cliquer sur le tri par étudiant
-        // Not implemented yet
-        throw new PendingException();
+        getPage().getByTestId("btn-sort-student").click();
+        getPage().waitForURL(url -> url.contains("sort=STUDENT"));
     }
 
     @Then("I see all absences of the module ordered by student")
@@ -149,8 +154,8 @@ public class SecretaryModuleDetailsSteps {
 
     @When("I sort the list by module")
     public void i_sort_the_list_by_module() {
-        // TODO: Cliquer sur le tri par module
-        throw new PendingException();
+        getPage().getByTestId("btn-sort-module").click();
+        getPage().waitForURL(url -> url.contains("sort=MODULE"));
     }
 
     @Then("I see all absences ordered by module")
