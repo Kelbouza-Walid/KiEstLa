@@ -94,7 +94,7 @@ public class AdminModuleSteps {
         getPage().getByTestId("select-reference-teacher").selectOption("Marie Curie (mcurie)");
     }
 
-    @When("I confirm the creation")
+    @When("I confirm the module creation")
     public void i_confirm_the_creation() {
         getPage().getByTestId("btn-add-module").click();
     }
@@ -116,7 +116,9 @@ public class AdminModuleSteps {
         userRepository.deleteAll();
 
         createUser("System", "Admin", "admin", Role.ADMIN);
-        createModule("Mathématiques");
+        Module mathematics = createModule("Mathématiques");
+        mathematics.setReferenceTeacher(createUser("Ada", "Lovelace", "alovelace", Role.TEACHER));
+        moduleRepository.save(mathematics);
         createModule("Algorithmique");
 
         login("admin", "testpassword");

@@ -1,7 +1,12 @@
 package fr.m2.groupe7.kiestla.service;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +16,8 @@ import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.ModuleMembers;
+import fr.m2.groupe7.kiestla.dto.UserSummary;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
@@ -23,6 +30,9 @@ public class ModuleService {
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
     private final AbsenceRepository absenceRepository;
+
+    private static final Comparator<User> BY_NAME = Comparator.comparing(User::getLastName)
+            .thenComparing(User::getFirstName);
 
     public ModuleService(ModuleRepository moduleRepository, UserRepository userRepository,
             AbsenceRepository absenceRepository) {
@@ -221,6 +231,118 @@ public class ModuleService {
         module.setName(trimmedName);
         module.setReferenceTeacher(referenceTeacher);
         moduleRepository.save(module);
+    }
+
+    /**
+     * Returns the module's reference teacher with the teachers it can be chosen among,
+     * and every teacher and student flagged with whether they are enrolled in the module.
+     * The reference teacher is left out of the teachers checkboxes: it is chosen separately.
+     *
+     * @throws ResourceNotFoundException if the module does not exist
+     */
+    @Transactional(readOnly = true)
+    public ModuleMembers getModuleMembers(Long moduleId) {
+        Module module = moduleRepository.findWithStudentsById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + moduleId));
+        User reference = module.getReferenceTeacher();
+
+        Set<Long> enrolledIds = module.getEnrolledUsers().stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
+
+        List<User> allTeachers = userRepository.findByRole(Role.TEACHER).stream()
+                .sorted(BY_NAME)
+                .toList();
+        List<ModuleMembers.Member> teachers = allTeachers.stream()
+                .filter(teacher -> reference == null || !teacher.getId().equals(reference.getId()))
+                .map(teacher -> new ModuleMembers.Member(UserSummary.from(teacher), enrolledIds.contains(teacher.getId())))
+                .toList();
+        List<ModuleMembers.Member> students = userRepository.findByRole(Role.STUDENT).stream()
+                .sorted(BY_NAME)
+                .map(student -> new ModuleMembers.Member(UserSummary.from(student), enrolledIds.contains(student.getId())))
+                .toList();
+
+        return new ModuleMembers(
+                module.getId(),
+                module.getName(),
+                reference != null ? reference.getId() : null,
+                allTeachers.stream().map(UserSummary::from).toList(),
+                teachers,
+                students);
+    }
+
+    /**
+     * Sets the reference teacher of a module and the teachers and students enrolled in it:
+     * the selected users are enrolled, the current members who are not selected anymore are unenrolled.
+     * The reference teacher is not enrolled as a regular teacher. The absences of an unenrolled student are kept.
+     *
+     * @param moduleId           the module's id
+     * @param referenceTeacherId the new reference teacher of the module
+     * @param teacherIds         the teachers that must be enrolled (the reference teacher is ignored)
+     * @param studentIds         the students that must be enrolled
+     * @throws ResourceNotFoundException if the module or one of the users does not exist
+     * @throws BusinessException         if the reference teacher is missing or not a teacher,
+     *                                   or if a selected teacher is not a teacher or a selected student not a student
+     */
+    @Transactional
+    public void updateMembers(Long moduleId, Long referenceTeacherId,
+            Collection<Long> teacherIds, Collection<Long> studentIds) {
+        Module module = moduleRepository.findWithStudentsById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + moduleId));
+
+        if (referenceTeacherId == null) {
+            throw new BusinessException("The reference teacher is required.");
+        }
+        User reference = userRepository.findById(referenceTeacherId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + referenceTeacherId));
+        if (reference.getRole() != Role.TEACHER) {
+            throw new BusinessException("The selected user is not a teacher.");
+        }
+
+        Set<Long> wantedTeacherIds = teacherIds == null ? new HashSet<>() : new HashSet<>(teacherIds);
+        Set<Long> wantedStudentIds = studentIds == null ? new HashSet<>() : new HashSet<>(studentIds);
+        wantedTeacherIds.remove(referenceTeacherId);
+
+        List<User> wantedUsers = new ArrayList<>();
+        wantedUsers.addAll(findUsersWithRole(wantedTeacherIds, Role.TEACHER,
+                "The selected user is not a teacher."));
+        wantedUsers.addAll(findUsersWithRole(wantedStudentIds, Role.STUDENT,
+                "The selected user is not a student."));
+
+        // User owns the enrollments join table: (un)link from that side
+        for (User member : new ArrayList<>(module.getEnrolledUsers())) {
+            boolean unselectedTeacher = member.getRole() == Role.TEACHER && !wantedTeacherIds.contains(member.getId());
+            boolean unselectedStudent = member.getRole() == Role.STUDENT && !wantedStudentIds.contains(member.getId());
+            if (unselectedTeacher || unselectedStudent) {
+                member.getModules().removeIf(m -> m.getId().equals(moduleId));
+                module.getEnrolledUsers().remove(member);
+                userRepository.save(member);
+            }
+        }
+        for (User user : wantedUsers) {
+            boolean alreadyEnrolled = user.getModules().stream().anyMatch(m -> m.getId().equals(moduleId));
+            if (!alreadyEnrolled) {
+                user.getModules().add(module);
+                module.getEnrolledUsers().add(user);
+                userRepository.save(user);
+            }
+        }
+        module.setReferenceTeacher(reference);
+        moduleRepository.save(module);
+    }
+
+    private List<User> findUsersWithRole(Set<Long> ids, Role role, String wrongRoleMessage) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<User> users = userRepository.findAllById(ids);
+        if (users.size() != ids.size()) {
+            throw new ResourceNotFoundException("User not found.");
+        }
+        if (users.stream().anyMatch(user -> user.getRole() != role)) {
+            throw new BusinessException(wrongRoleMessage);
+        }
+        return users;
     }
 
     /**

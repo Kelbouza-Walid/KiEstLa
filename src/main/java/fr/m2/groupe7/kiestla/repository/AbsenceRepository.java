@@ -15,6 +15,10 @@ import java.util.List;
 public interface AbsenceRepository extends JpaRepository<Absence, Long> {
 	List<Absence> findByStudentId(Long studentId);
 
+	boolean existsByStudentId(Long studentId);
+
+	long countByStudentId(Long studentId);
+
 	List<Absence> findByModuleId(Long moduleId);
 
 	@EntityGraph(attributePaths = "student")

@@ -21,4 +21,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findWithModulesById(Long id);
     List<User> findByRole(Role role);
     boolean existsByLogin(String login);
+    boolean existsByLoginAndIdNot(String login, Long id);
 }

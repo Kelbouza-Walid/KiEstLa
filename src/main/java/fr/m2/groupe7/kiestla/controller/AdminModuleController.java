@@ -1,5 +1,7 @@
 package fr.m2.groupe7.kiestla.controller;
 
+import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,5 +48,22 @@ public class AdminModuleController {
         moduleService.deleteModule(id);
         redirectAttributes.addFlashAttribute("successMessage", "The module has been successfully deleted.");
         return "redirect:/admin/modules";
+    }
+
+    @GetMapping("/{id}/members")
+    public String members(@PathVariable Long id, Model model) {
+        model.addAttribute("module", moduleService.getModuleMembers(id));
+        return "admin-module-members";
+    }
+
+    @PostMapping("/{id}/members")
+    public String updateMembers(@PathVariable Long id,
+            @RequestParam(required = false) Long referenceTeacherId,
+            @RequestParam(required = false) List<Long> teacherIds,
+            @RequestParam(required = false) List<Long> studentIds,
+            RedirectAttributes redirectAttributes) {
+        moduleService.updateMembers(id, referenceTeacherId, teacherIds, studentIds);
+        redirectAttributes.addFlashAttribute("successMessage", "The module members have been updated.");
+        return "redirect:/admin/modules/" + id + "/members";
     }
 }

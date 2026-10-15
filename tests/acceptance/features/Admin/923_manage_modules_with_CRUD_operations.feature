@@ -15,7 +15,7 @@ Feature: manage modules with CRUD operations
     Given The module information is valid
     When I enter the module name
     And I select a reference teacher
-    And I confirm the creation
+    And I confirm the module creation
     Then The module is registered in the system
 
   Scenario: update modules

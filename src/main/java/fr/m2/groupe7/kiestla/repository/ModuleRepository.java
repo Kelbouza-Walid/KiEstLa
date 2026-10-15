@@ -18,4 +18,8 @@ public interface ModuleRepository extends JpaRepository<Module, Long> {
 	List<Module> findByNameContainingIgnoreCaseOrderByName(String name);
 
 	boolean existsByNameIgnoreCase(String name);
+
+	boolean existsByReferenceTeacherId(Long teacherId);
+
+	List<Module> findByReferenceTeacherIdOrderByName(Long teacherId);
 }

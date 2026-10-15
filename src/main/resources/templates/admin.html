@@ -4,10 +4,10 @@
 <section>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a th:href="@{/admin/modules}" data-testid="btn-admin-modules" class="btn btn-primary mb-3">Manage modules</a>
-        <h1 class="m-0 text-primary">Utilisateurs</h1>
+        <h1 class="m-0 text-primary">Users</h1>
         <form th:action="@{/logout}" method="post" class="m-0">
             <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
-                Déconnexion
+                Log out
             </button>
         </form>
     </div>
@@ -18,9 +18,9 @@
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
                         <h2 class="h4 text-primary fw-bold mb-1">
-                            <i class="bi bi-person-plus me-2"></i>Ajouter un utilisateur
+                            <i class="bi bi-person-plus me-2"></i>Add a user
                         </h2>
-                        <p class="text-muted small mb-0">Un mot de passe sera généré automatiquement</p>
+                        <p class="text-muted small mb-0">A password will be generated automatically</p>
                     </div>
 
                     <div th:if="${successMessage}" class="alert alert-success mb-3" role="alert">
@@ -29,14 +29,14 @@
                             <div data-testid="success-message" th:text="${successMessage}"></div>
                         </div>
                         <div th:if="${generatedPassword}" class="mt-3">
-                            <div class="small mb-1">Mot de passe généré (il ne sera plus affiché) :</div>
+                            <div class="small mb-1">Generated password (it will not be shown again):</div>
                             <div class="input-group">
                                 <code id="generated-password"
                                       class="form-control fs-5 text-center user-select-all bg-white"
                                       data-testid="generated-password" th:text="${generatedPassword}"></code>
                                 <button type="button" id="btn-copy-password" class="btn btn-outline-success"
                                         data-testid="btn-copy-password">
-                                    <i class="bi bi-clipboard"></i> Copier
+                                    <i class="bi bi-clipboard"></i> Copy
                                 </button>
                             </div>
                         </div>
@@ -44,7 +44,7 @@
                             document.getElementById('btn-copy-password').addEventListener('click', async function () {
                                 const password = document.getElementById('generated-password').textContent.trim();
                                 await navigator.clipboard.writeText(password);
-                                this.innerHTML = '<i class="bi bi-check2"></i> Copié';
+                                this.innerHTML = '<i class="bi bi-check2"></i> Copied';
                             });
                         </script>
                     </div>
@@ -57,28 +57,28 @@
                     <form th:action="@{/admin/users}" method="post">
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label for="firstName" class="form-label">Prénom</label>
+                                <label for="firstName" class="form-label">First name</label>
                                 <input type="text" id="firstName" name="firstName" class="form-control"
-                                       placeholder="Jean" data-testid="input-first-name" required maxlength="100">
+                                       placeholder="John" data-testid="input-first-name" required maxlength="100">
                             </div>
                             <div class="col-sm-6">
-                                <label for="lastName" class="form-label">Nom</label>
+                                <label for="lastName" class="form-label">Last name</label>
                                 <input type="text" id="lastName" name="lastName" class="form-control"
-                                       placeholder="Dupont" data-testid="input-last-name" required maxlength="100">
+                                       placeholder="Doe" data-testid="input-last-name" required maxlength="100">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="login" class="form-label">Identifiant</label>
+                            <label for="login" class="form-label">Login</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
                                 <input type="text" id="login" name="login" class="form-control"
-                                       placeholder="jdupont" data-testid="input-login" required maxlength="50">
+                                       placeholder="jdoe" data-testid="input-login" required maxlength="50">
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label for="role" class="form-label">Rôle</label>
+                            <label for="role" class="form-label">Role</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
                                 <select id="role" name="role" class="form-select" data-testid="select-role" required>
@@ -88,7 +88,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100" data-testid="btn-create-user">
-                            <i class="bi bi-person-plus me-1"></i> Créer l'utilisateur
+                            <i class="bi bi-person-plus me-1"></i> Create user
                         </button>
                     </form>
                 </div>
@@ -97,6 +97,23 @@
     </div>
 
     <h2 class="mb-3 text-primary">All Users</h2>
+
+    <form th:action="@{/admin}" method="get" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="text" name="q" th:value="${searchQuery}" class="form-control w-auto flex-grow-1"
+               placeholder="Search by first name, last name or login" aria-label="Search a user"
+               data-testid="input-user-search">
+        <select name="role" class="form-select w-auto" aria-label="Filter by role" data-testid="select-search-role">
+            <option value="">All roles</option>
+            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"
+                    th:selected="${role == searchRole}"></option>
+        </select>
+        <button type="submit" class="btn btn-primary" data-testid="btn-search-user">
+            <i class="bi bi-search me-1"></i> Search
+        </button>
+        <a th:if="${!#strings.isEmpty(searchQuery) or searchRole != null}" th:href="@{/admin}"
+           class="btn btn-outline-secondary" data-testid="btn-reset-search">Reset</a>
+    </form>
+
     <div th:replace="~{components :: styled_table(~{::#user-headers}, ~{::#user-rows})}">
         <my_headers id="user-headers">
             <th>ID</th>
@@ -104,9 +121,12 @@
             <th>Last Name</th>
             <th>Login</th>
             <th>Role</th>
+            <th>Actions</th>
         </my_headers>
         <my_rows id="user-rows">
-            <tr th:each="user : ${users}">
+            <tr th:each="user : ${users}" data-testid="user-row"
+                th:onclick="'window.location.href=\'/admin/users/' + ${user.id} + '\''"
+                style="cursor: pointer;">
                 <td data-testid="user-id" th:text="${user.id}"></td>
                 <td data-testid="user-first-name" th:text="${user.firstName}"></td>
                 <td data-testid="user-last-name" th:text="${user.lastName}"></td>
@@ -114,9 +134,15 @@
                 <td>
                     <span class="badge bg-secondary" data-testid="user-role" th:text="${user.role}"></span>
                 </td>
+                <td onclick="event.stopPropagation()" style="cursor: default;">
+                    <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" data-testid="btn-edit-user"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                </td>
             </tr>
             <tr th:if="${#lists.isEmpty(users)}">
-                <td colspan="5" class="text-center text-muted py-3">No users found in the database.</td>
+                <td colspan="6" data-testid="no-users" class="text-center text-muted py-3">No users found.</td>
             </tr>
         </my_rows>
     </div>

@@ -1,6 +1,7 @@
 package fr.m2.groupe7.kiestla.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,13 +12,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
+import fr.m2.groupe7.kiestla.dto.AdminUserDetails;
 import fr.m2.groupe7.kiestla.dto.AdminUserSummary;
 import fr.m2.groupe7.kiestla.dto.CreateUserRequest;
 import fr.m2.groupe7.kiestla.dto.CreatedUser;
+import fr.m2.groupe7.kiestla.dto.ModuleSummary;
+import fr.m2.groupe7.kiestla.dto.UpdateUserRequest;
 import fr.m2.groupe7.kiestla.dto.UserSummary;
+import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.exception.BusinessException;
+import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
+import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
+import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +45,12 @@ class UserServiceTest {
 
     @Mock
     private PasswordGenerator passwordGenerator;
+
+    @Mock
+    private ModuleRepository moduleRepository;
+
+    @Mock
+    private AbsenceRepository absenceRepository;
 
     @InjectMocks
     private UserService userService;
@@ -155,6 +169,265 @@ class UserServiceTest {
 
         verify(userRepository, never()).save(any());
         verifyNoInteractions(passwordEncoder, passwordGenerator);
+    }
+
+    @Test
+    void getUser_success() {
+        when(userRepository.findById(5L))
+                .thenReturn(Optional.of(createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT)));
+
+        assertEquals(new AdminUserSummary(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT), userService.getUser(5L));
+    }
+
+    @Test
+    void getUser_notFound() {
+        when(userRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUser(5L));
+    }
+
+    @Test
+    void updateUser_success() {
+        User user = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        user.setPassword("{bcrypt}hashed");
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByLoginAndIdNot("nfaivre2", 5L)).thenReturn(false);
+        when(userRepository.save(user)).thenReturn(user);
+
+        AdminUserSummary result = userService.updateUser(5L,
+                new UpdateUserRequest(" Noa ", " Faivres ", " nfaivre2 ", Role.STUDENT), "admin");
+
+        assertEquals(new AdminUserSummary(5L, "Noa", "Faivres", "nfaivre2", Role.STUDENT), result);
+        assertEquals("{bcrypt}hashed", user.getPassword());
+        verifyNoInteractions(passwordEncoder, passwordGenerator, moduleRepository, absenceRepository);
+    }
+
+    @Test
+    void updateUser_keepsOwnLogin() {
+        User user = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByLoginAndIdNot("nfaivre", 5L)).thenReturn(false);
+        when(userRepository.save(user)).thenReturn(user);
+
+        AdminUserSummary result = userService.updateUser(5L,
+                new UpdateUserRequest("Noam", "Faivre-Martin", "nfaivre", Role.STUDENT), "admin");
+
+        assertEquals("Faivre-Martin", result.lastName());
+        assertEquals("nfaivre", result.login());
+    }
+
+    @Test
+    void updateUser_notFound() {
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.updateUser(5L,
+                new UpdateUserRequest("Noam", "Faivre", "nfaivre", Role.STUDENT), "admin"));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_duplicateLogin() {
+        User user = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByLoginAndIdNot("skacmaz", 5L)).thenReturn(true);
+
+        assertThrows(BusinessException.class, () -> userService.updateUser(5L,
+                new UpdateUserRequest("Noam", "Faivre", "skacmaz", Role.STUDENT), "admin"));
+
+        assertEquals("nfaivre", user.getLogin());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_adminCannotChangeOwnRole() {
+        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
+        when(userRepository.findWithModulesById(1L)).thenReturn(Optional.of(admin));
+
+        assertThrows(BusinessException.class, () -> userService.updateUser(1L,
+                new UpdateUserRequest("System", "Admin", "admin", Role.STUDENT), "admin"));
+
+        assertEquals(Role.ADMIN, admin.getRole());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_adminCannotChangeOwnLogin() {
+        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
+        when(userRepository.findWithModulesById(1L)).thenReturn(Optional.of(admin));
+
+        assertThrows(BusinessException.class, () -> userService.updateUser(1L,
+                new UpdateUserRequest("System", "Admin", "root", Role.ADMIN), "admin"));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_adminCanChangeOwnName() {
+        User admin = createUser(1L, "System", "Admin", "admin", Role.ADMIN);
+        when(userRepository.findWithModulesById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.existsByLoginAndIdNot("admin", 1L)).thenReturn(false);
+        when(userRepository.save(admin)).thenReturn(admin);
+
+        AdminUserSummary result = userService.updateUser(1L,
+                new UpdateUserRequest("Super", "Admin", "admin", Role.ADMIN), "admin");
+
+        assertEquals("Super", result.firstName());
+    }
+
+    @Test
+    void updateUser_roleChangeRemovesEnrollments() {
+        User user = createUser(5L, "Noam", "Faivre", "nfaivre", Role.TEACHER);
+        user.getModules().add(new Module());
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByLoginAndIdNot("nfaivre", 5L)).thenReturn(false);
+        when(moduleRepository.existsByReferenceTeacherId(5L)).thenReturn(false);
+        when(absenceRepository.existsByStudentId(5L)).thenReturn(false);
+        when(userRepository.save(user)).thenReturn(user);
+
+        AdminUserSummary result = userService.updateUser(5L,
+                new UpdateUserRequest("Noam", "Faivre", "nfaivre", Role.SECRETARY), "admin");
+
+        assertEquals(Role.SECRETARY, result.role());
+        assertTrue(user.getModules().isEmpty());
+    }
+
+    @Test
+    void updateUser_roleChangeRefusedForReferenceTeacher() {
+        User teacher = createUser(5L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(teacher));
+        when(userRepository.existsByLoginAndIdNot("fbouquet", 5L)).thenReturn(false);
+        when(moduleRepository.existsByReferenceTeacherId(5L)).thenReturn(true);
+
+        assertThrows(BusinessException.class, () -> userService.updateUser(5L,
+                new UpdateUserRequest("Fabrice", "Bouquet", "fbouquet", Role.STUDENT), "admin"));
+
+        assertEquals(Role.TEACHER, teacher.getRole());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_roleChangeRefusedForStudentWithAbsences() {
+        User student = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(student));
+        when(userRepository.existsByLoginAndIdNot("nfaivre", 5L)).thenReturn(false);
+        when(moduleRepository.existsByReferenceTeacherId(5L)).thenReturn(false);
+        when(absenceRepository.existsByStudentId(5L)).thenReturn(true);
+
+        assertThrows(BusinessException.class, () -> userService.updateUser(5L,
+                new UpdateUserRequest("Noam", "Faivre", "nfaivre", Role.TEACHER), "admin"));
+
+        assertEquals(Role.STUDENT, student.getRole());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void searchUsers_noCriteriaReturnsAllUsers() {
+        List<User> users = searchableUsers();
+        when(userRepository.findAll()).thenReturn(users);
+
+        List<AdminUserSummary> result = userService.searchUsers("  ", null);
+
+        assertEquals(users.stream().map(AdminUserSummary::from).toList(), result);
+    }
+
+    @Test
+    void searchUsers_byNameIgnoresCase() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        List<AdminUserSummary> result = userService.searchUsers(" FAIV ", null);
+
+        assertEquals(List.of("nfaivre"), logins(result));
+    }
+
+    @Test
+    void searchUsers_byLogin() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        assertEquals(List.of("skacmaz"), logins(userService.searchUsers("skac", null)));
+    }
+
+    @Test
+    void searchUsers_byRoleOnlySortedByName() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        List<AdminUserSummary> result = userService.searchUsers(null, Role.STUDENT);
+
+        // sorted by last name: Faivre, Kacmaz
+        assertEquals(List.of("nfaivre", "skacmaz"), logins(result));
+    }
+
+    @Test
+    void searchUsers_byNameAndRole() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        // "f" matches Noam Faivre and Fabrice Bouquet, the role keeps only the student
+        assertEquals(List.of("nfaivre"), logins(userService.searchUsers("f", Role.STUDENT)));
+    }
+
+    @Test
+    void searchUsers_noMatch() {
+        when(userRepository.findAll()).thenReturn(searchableUsers());
+
+        assertTrue(userService.searchUsers("zzz", null).isEmpty());
+    }
+
+    private List<User> searchableUsers() {
+        return List.of(
+                createUser(1L, "System", "Admin", "admin", Role.ADMIN),
+                createUser(2L, "Suleyman", "Kacmaz", "skacmaz", Role.STUDENT),
+                createUser(3L, "Noam", "Faivre", "nfaivre", Role.STUDENT),
+                createUser(4L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER));
+    }
+
+    private List<String> logins(List<AdminUserSummary> users) {
+        return users.stream().map(AdminUserSummary::login).toList();
+    }
+
+    @Test
+    void getUserDetails_student() {
+        User student = createUser(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT);
+        Module physics = createModule(2L, "Physique");
+        Module algorithms = createModule(1L, "Algorithmique");
+        student.getModules().add(physics);
+        student.getModules().add(algorithms);
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.of(student));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(5L)).thenReturn(List.of());
+        when(absenceRepository.countByStudentId(5L)).thenReturn(3L);
+
+        AdminUserDetails result = userService.getUserDetails(5L);
+
+        assertEquals(new AdminUserDetails(5L, "Noam", "Faivre", "nfaivre", Role.STUDENT,
+                List.of(ModuleSummary.from(algorithms), ModuleSummary.from(physics)), List.of(), 3L), result);
+    }
+
+    @Test
+    void getUserDetails_referenceTeacher() {
+        User teacher = createUser(10L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
+        Module module = createModule(1L, "Test fonctionnel");
+        module.setReferenceTeacher(teacher);
+        when(userRepository.findWithModulesById(10L)).thenReturn(Optional.of(teacher));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(10L)).thenReturn(List.of(module));
+        when(absenceRepository.countByStudentId(10L)).thenReturn(0L);
+
+        AdminUserDetails result = userService.getUserDetails(10L);
+
+        assertEquals(List.of(new ModuleSummary(1L, "Test fonctionnel", "Bouquet")), result.referencedModules());
+        assertTrue(result.enrolledModules().isEmpty());
+    }
+
+    @Test
+    void getUserDetails_notFound() {
+        when(userRepository.findWithModulesById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUserDetails(5L));
+    }
+
+    private Module createModule(Long id, String name) {
+        Module module = new Module();
+        module.setId(id);
+        module.setName(name);
+        return module;
     }
 
     private User createUser(Long id, String firstName, String lastName, String login, Role role) {

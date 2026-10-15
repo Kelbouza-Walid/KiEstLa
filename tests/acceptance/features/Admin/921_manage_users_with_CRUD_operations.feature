@@ -5,6 +5,7 @@ Feature: manage users with CRUD operations
 
   Background: I have already logged in
 
+  @implemented
   Scenario: lookup users
     Given Users exist in the system
     When I search for a user by name or role
@@ -24,6 +25,7 @@ Feature: manage users with CRUD operations
     When The new user logs in with the generated password
     Then The new user is redirected to their home page
 
+  @implemented
   Scenario: update users
     Given The user exists
     When I edit the user's information
