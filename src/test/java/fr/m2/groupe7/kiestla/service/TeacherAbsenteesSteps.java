@@ -44,7 +44,6 @@ public class TeacherAbsenteesSteps {
     // Background of feature 1247
 
     @Given("I am in several different modules")
-    @Given("I am in several different modules")
     public void i_am_in_several_different_modules() {
         // The shared Background step "I am logged in" (TeacherAddStudentTest) has already run:
         // we start from a clean database and log in again on our own page.
