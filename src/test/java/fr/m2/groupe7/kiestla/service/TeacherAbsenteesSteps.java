@@ -2,10 +2,12 @@ package fr.m2.groupe7.kiestla.service;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.time.LocalDate;
 import java.util.List;
 
+import io.cucumber.java.en.Given;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.microsoft.playwright.Page;
@@ -38,6 +40,68 @@ public class TeacherAbsenteesSteps {
 
     @Autowired
     private UserRepository userRepository;
+
+    // Background of feature 1247
+
+    @Given("I am in several different modules")
+    @Given("I am in several different modules")
+    public void i_am_in_several_different_modules() {
+        // The shared Background step "I am logged in" (TeacherAddStudentTest) has already run:
+        // we start from a clean database and log in again on our own page.
+        absenceRepository.deleteAll();
+        moduleRepository.deleteAll();
+        userRepository.deleteAll();
+
+        User teacher = createUser("Ref", "Teacher", "testteacher", Role.TEACHER);
+        User zoe = createUser("Zoe", "Adams", "zadams", Role.STUDENT);
+        User bob = createUser("Bob", "Zimmer", "bzimmer", Role.STUDENT);
+        User carl = createUser("Carl", "Zorro", "czorro", Role.STUDENT);
+        User otherTeacher = createUser("Other", "Prof", "other", Role.TEACHER);
+
+        Module maths = createModule("Maths", teacher);
+        Module algo = createModule("Algo", teacher);
+        Module physique = createModule("Physique", otherTeacher);
+
+        enroll(teacher, maths);
+        enroll(teacher, algo);
+        enroll(otherTeacher, physique);
+        enroll(zoe, maths);
+        enroll(zoe, algo);
+        enroll(bob, algo);
+        enroll(carl, physique);
+
+        addAbsences(zoe, maths, 1, AbsenceStatus.UNJUSTIFIED);
+        addAbsences(zoe, algo, 1, AbsenceStatus.UNJUSTIFIED);
+        addAbsences(bob, algo, 1, AbsenceStatus.JUSTIFIED);
+        // Carl is not in any of my modules: his absences must never be shown
+        addAbsences(carl, physique, 2, AbsenceStatus.UNJUSTIFIED);
+
+        login("testteacher", "testpassword");
+    }
+
+
+    @When("I open the list of all the absences")
+    public void i_open_the_list_of_all_the_absences() {
+        getPage().navigate(BASE_URL + "/teacher/absences");
+    }
+
+    @Then("I should see the list of absences sorted by student")
+    public void i_should_see_the_list_of_absences_sorted_by_student() {
+        assertThat(getPage().getByTestId("absence-row")).hasCount(3);
+        assertEquals(List.of("Adams", "Adams", "Zimmer"), getPage().getByTestId("absence-last-name").allTextContents());
+        assertEquals(List.of("Algo", "Maths", "Algo"), getPage().getByTestId("absence-module").allTextContents());
+    }
+
+    @Then("I should not see the absences of students who are not in my modules")
+    public void i_should_not_see_the_absences_of_students_who_are_not_in_my_modules() {
+        assertThat(getPage().getByTestId("absence-row")).hasCount(3);
+        assertFalse(getPage().getByTestId("absence-last-name").allTextContents().contains("Zorro"));
+        assertFalse(getPage().getByTestId("absence-module").allTextContents().contains("Physique"));
+    }
+
+    private boolean isGlobalAbsencesPage() {
+        return getPage().url().contains("/teacher/absences");
+    }
 
     private Page getPage() {
         return PlaywrightHooks.getPage();
@@ -84,9 +148,10 @@ public class TeacherAbsenteesSteps {
     @Then("I should see the list of absences sorted by module")
     public void i_should_see_the_list_of_absences_sorted_by_module() {
         // Alice is excluded, so only 2 rows. Module order: Algo (Bob) then Maths (Zoe)
-        assertThat(getPage().getByTestId("absentee-row")).hasCount(2);
-        assertEquals(List.of("Algo", "Maths"), getPage().getByTestId("absentee-module").allTextContents());
-        assertEquals(List.of("Zimmer", "Adams"), getPage().getByTestId("absentee-last-name").allTextContents());
+        assertThat(getPage().getByTestId("absence-row")).hasCount(3);
+        assertEquals(List.of("Algo", "Algo", "Maths"), getPage().getByTestId("absence-module").allTextContents());
+        assertEquals(List.of("Adams", "Zimmer", "Adams"), getPage().getByTestId("absence-last-name").allTextContents());
+        return;
     }
 
     // The typo "absenteit" comes from the .feature file, it must stay identical
@@ -141,4 +206,6 @@ public class TeacherAbsenteesSteps {
         getPage().click("button[type='submit']");
         getPage().waitForURL("**/teacher");
     }
+
+
 }

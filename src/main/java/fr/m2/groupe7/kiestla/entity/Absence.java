@@ -40,4 +40,5 @@ public class Absence {
     @OneToMany(mappedBy = "absence", cascade = CascadeType.REMOVE)
     private List<Comment> comments;
 
+
 }
