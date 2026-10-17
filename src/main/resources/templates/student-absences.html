@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/student}" class="btn btn-outline-secondary btn-sm mb-3">← Retour à mes modules</a>
+
+    <h1 class="mb-4 text-primary">Mes absences</h1>
+
+    <div th:replace="~{components :: styled_table(~{::#headersAbsences}, ~{::#rowsAbsences})}">
+        <my_headers id="headersAbsences">
+            <th>Module</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Motif</th>
+            <th>Description</th>
+        </my_headers>
+        <my_rows id="rowsAbsences">
+            <tr th:each="absence : ${absences}" data-testid="student-absence"
+                th:onclick="'window.location.href=\'/student/absences/' + ${absence.id} + '\''"
+                style="cursor: pointer;">
+                <td data-testid="absence-module" th:text="${absence.moduleName}"></td>
+                <td data-testid="absence-date" th:text="${absence.date}"></td>
+                <td>
+                    <span data-testid="absence-status"
+                          th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
+                          th:text="${absence.status}"></span>
+                </td>
+                <td data-testid="absence-motive-title" th:text="${absence.motiveTitle}"></td>
+                <td data-testid="absence-motive-description" th:text="${absence.motiveDescription}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(absences)}">
+                <td colspan="5" data-testid="no-absences" class="text-center text-muted py-3">Aucune absence trouvée</td>
+            </tr>
+        </my_rows>
+    </div>
+</section>
+
+</html>

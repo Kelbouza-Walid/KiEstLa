@@ -86,6 +86,30 @@ class AbsenceServiceTest {
     }
 
     @Test
+    void getAbsenceForStudent_returnsOnlyRequestedStudentsAbsence() {
+        Absence absence = createAbsence(3L, "Alice", "Durand", LocalDate.of(2026, 10, 3),
+                AbsenceStatus.JUSTIFIED, "Malade", "Certificat médical");
+        Module module = new Module();
+        module.setName("Programmation");
+        absence.setModule(module);
+        when(absenceRepository.findByIdAndStudentLogin(3L, "student1")).thenReturn(Optional.of(absence));
+
+        var summary = absenceService.getAbsenceForStudent(3L, "student1");
+
+        assertEquals(3L, summary.id());
+        assertEquals("Programmation", summary.moduleName());
+        assertEquals(AbsenceStatus.JUSTIFIED, summary.status());
+        verify(absenceRepository).findByIdAndStudentLogin(3L, "student1");
+    }
+
+    @Test
+    void getAbsenceForStudent_rejectsAbsenceNotOwnedByStudent() {
+        when(absenceRepository.findByIdAndStudentLogin(3L, "student1")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> absenceService.getAbsenceForStudent(3L, "student1"));
+    }
+
+    @Test
     void justifyAbsence_basic() {
         Absence absence = createAbsence(1L, "Mathis", "Regazzoni", LocalDate.of(2026, 10, 1), AbsenceStatus.UNJUSTIFIED,
                 null, null);

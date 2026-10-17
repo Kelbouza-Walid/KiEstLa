@@ -125,4 +125,11 @@ public class AbsenceService {
                 .map(StudentAbsenceSummary::from)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public StudentAbsenceSummary getAbsenceForStudent(Long absenceId, String studentLogin) {
+        Absence absence = absenceRepository.findByIdAndStudentLogin(absenceId, studentLogin)
+                .orElseThrow(() -> new ResourceNotFoundException("Absence introuvable."));
+        return StudentAbsenceSummary.from(absence);
+    }
 }
