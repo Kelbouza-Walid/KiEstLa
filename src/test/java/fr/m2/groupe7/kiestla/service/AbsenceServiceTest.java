@@ -47,6 +47,9 @@ class AbsenceServiceTest {
     @Mock
     private ModuleService moduleService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private AbsenceService absenceService;
 
