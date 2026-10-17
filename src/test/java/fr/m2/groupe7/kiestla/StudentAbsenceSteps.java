@@ -17,11 +17,13 @@ import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 import fr.m2.groupe7.kiestla.service.ModuleService;
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class StudentAbsenceSteps {
 
     private static final String BASE_URL = "http://localhost:8080";
@@ -40,9 +42,11 @@ public class StudentAbsenceSteps {
 
     private User student;
     private Page page;
+    private boolean studentScenarioInitialized;
 
     @Given("I am logged in as a student with username {string}")
     public void i_am_logged_in_as_a_student(String username) {
+        studentScenarioInitialized = true;
         absenceRepository.deleteAll();
         moduleRepository.findAll().forEach(module -> moduleService.deleteModule(module.getId()));
         userRepository.deleteAll();
@@ -61,6 +65,16 @@ public class StudentAbsenceSteps {
         page.fill("input[name='password']", "testpassword");
         page.click("button[type='submit']");
         page.waitForURL("**/student");
+    }
+
+    @After
+    public void cleanUpStudentScenario() {
+        if (!studentScenarioInitialized) {
+            return;
+        }
+        absenceRepository.deleteAll();
+        moduleRepository.findAll().forEach(module -> moduleService.deleteModule(module.getId()));
+        userRepository.deleteAll();
     }
 
     @Given("I am enrolled in module {string} and module {string}")
@@ -101,6 +115,7 @@ public class StudentAbsenceSteps {
     public void i_select_option(String option) {
         if ("Sort by module".equals(option)) {
             page.getByTestId("absence-sort").selectOption("MODULE");
+            page.waitForURL("**/student?*sortBy=MODULE*");
             return;
         }
         throw new IllegalArgumentException("Unsupported absence option: " + option);
@@ -109,6 +124,7 @@ public class StudentAbsenceSteps {
     @When("I filter by module {string}")
     public void i_filter_by_module(String moduleName) {
         page.getByTestId("absence-module-filter").selectOption(moduleName);
+        page.waitForURL("**/student?*module=" + moduleName + "*");
     }
 
     @Then("I should see a list of my absences")
