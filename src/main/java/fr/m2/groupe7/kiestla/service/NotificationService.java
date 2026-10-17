@@ -58,6 +58,15 @@ public class NotificationService {
         }
     }
 
+
+    @Transactional
+    public void removeNotificationsForStudentAndModule(Long studentId, Long moduleId) {
+        List<Notif> notifs = notifRepository.findByStudentIdAndModuleId(studentId, moduleId);
+        if (notifs != null && !notifs.isEmpty()) {
+            notifRepository.deleteAll(notifs);
+        }
+    }
+
     @Transactional
     public void notifyForUnjustifiedAbsences(User student, Module module, long unjustifiedCount) {
         Module fullModule = moduleRepository.findWithStudentsById(module.getId()).orElse(module);
@@ -70,7 +79,11 @@ public class NotificationService {
         recipients.addAll(userRepository.findByRole(Role.SECRETARY));
 
         for (User recipient : recipients) {
-            notifRepository.save(new Notif(recipient, message));
+            boolean alreadyNotified = notifRepository.existsByUserIdAndStudentIdAndModuleIdAndStatus(
+                    recipient.getId(), student.getId(), fullModule.getId(), NotifStatus.UNREAD);
+            if (!alreadyNotified) {
+                notifRepository.save(new Notif(recipient, message, student.getId(), fullModule.getId()));
+            }
         }
     }
 }

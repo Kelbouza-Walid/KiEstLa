@@ -224,4 +224,59 @@ public class UserService {
                 .map(UserSummary::from)
                 .toList();
     }
+
+    /**
+     * Deletes a user from the system.
+     *
+     * @param id the user's id
+     * @return the deleted user's summary
+     * @throws ResourceNotFoundException if the user does not exist
+     */
+    @Transactional
+    public AdminUserSummary deleteUser(Long id) {
+        return deleteUser(id, null);
+    }
+
+    /**
+     * Deletes a user from the system.
+     *
+     * @param id           the user's id
+     * @param currentLogin the login of the administrator performing the deletion, or null
+     * @return the deleted user's summary
+     * @throws ResourceNotFoundException if the user does not exist
+     * @throws BusinessException         if an admin attempts to delete their own account
+     */
+    @Transactional
+    public AdminUserSummary deleteUser(Long id, String currentLogin) {
+        User user = userRepository.findWithModulesById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        if (currentLogin != null && user.getLogin().equals(currentLogin)) {
+            throw new BusinessException("You cannot delete your own account.");
+        }
+
+        user.getModules().clear();
+
+        List<fr.m2.groupe7.kiestla.entity.Module> referencedModules = moduleRepository.findByReferenceTeacherIdOrderByName(id);
+        for (fr.m2.groupe7.kiestla.entity.Module module : referencedModules) {
+            module.setReferenceTeacher(null);
+            moduleRepository.save(module);
+        }
+
+        List<Comment> comments = commentRepository.findByCommenterId(id);
+        commentRepository.deleteAll(comments);
+
+        List<Absence> absences = absenceRepository.findByStudentId(id);
+        absenceRepository.deleteAll(absences);
+
+        List<Notif> notifs = notifRepository.findByUserId(id);
+        notifRepository.deleteAll(notifs);
+
+        List<Notif> studentNotifs = notifRepository.findByStudentId(id);
+        notifRepository.deleteAll(studentNotifs);
+
+        AdminUserSummary summary = AdminUserSummary.from(user);
+        userRepository.delete(user);
+        return summary;
+    }
 }

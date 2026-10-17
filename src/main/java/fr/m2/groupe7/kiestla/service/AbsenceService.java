@@ -73,6 +73,17 @@ public class AbsenceService {
         absence.setMotiveTitle(justificationReq.motiveTitle());
         absence.setMotiveDescription(justificationReq.motiveDescription());
         absence.setStatus(AbsenceStatus.JUSTIFIED);
+        absenceRepository.save(absence);
+
+        if (absence.getStudent() != null && absence.getStudent().getId() != null
+                && absence.getModule() != null && absence.getModule().getId() != null) {
+            long unjustifiedCount = absenceRepository.countByStudentIdAndModuleIdAndStatus(
+                    absence.getStudent().getId(), absence.getModule().getId(), AbsenceStatus.UNJUSTIFIED);
+            if (unjustifiedCount < 3) {
+                notificationService.removeNotificationsForStudentAndModule(
+                        absence.getStudent().getId(), absence.getModule().getId());
+            }
+        }
     }
 
     /**

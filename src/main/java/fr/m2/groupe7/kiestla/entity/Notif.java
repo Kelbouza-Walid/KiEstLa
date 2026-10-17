@@ -26,6 +26,12 @@ public class Notif {
     @Column(nullable = false)
     private NotifStatus status = NotifStatus.UNREAD;
 
+    @Column(name = "student_id")
+    private Long studentId;
+
+    @Column(name = "module_id")
+    private Long moduleId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -35,6 +41,15 @@ public class Notif {
     public Notif(User user, String message) {
         this.user = user;
         this.message = message;
+        this.status = NotifStatus.UNREAD;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Notif(User user, String message, Long studentId, Long moduleId) {
+        this.user = user;
+        this.message = message;
+        this.studentId = studentId;
+        this.moduleId = moduleId;
         this.status = NotifStatus.UNREAD;
         this.createdAt = LocalDateTime.now();
     }
