@@ -37,4 +37,6 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
     List<Absence> findByStudentLoginOrderByDateDesc(String login);
 
     void deleteByModuleId(Long moduleId);
+
+    void deleteByStudentId(Long studentId);
 }
