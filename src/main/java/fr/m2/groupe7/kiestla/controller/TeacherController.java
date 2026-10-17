@@ -81,10 +81,23 @@ public class TeacherController {
     }
 
     @PostMapping("/teacher/notifications/read-all")
-    public String markNotificationsAsRead(Authentication authentication) {
+    public String markNotificationsAsRead(
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
         if (authentication != null) {
             notificationService.markAllAsRead(authentication.getName());
         }
-        return "redirect:/teacher";
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/teacher";
+    }
+
+    @PostMapping("/teacher/notifications/{id}/read")
+    public String markNotificationAsRead(
+            @PathVariable Long id,
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
+        if (authentication != null) {
+            notificationService.markAsRead(id, authentication.getName());
+        }
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/teacher";
     }
 }

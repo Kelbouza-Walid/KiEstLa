@@ -94,10 +94,23 @@ public class SecretaryController {
     }
 
     @PostMapping("/notifications/read-all")
-    public String markNotificationsAsRead(Authentication authentication) {
+    public String markNotificationsAsRead(
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
         if (authentication != null) {
             notificationService.markAllAsRead(authentication.getName());
         }
-        return "redirect:/secretary";
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/secretary";
+    }
+
+    @PostMapping("/notifications/{id}/read")
+    public String markNotificationAsRead(
+            @PathVariable Long id,
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
+        if (authentication != null) {
+            notificationService.markAsRead(id, authentication.getName());
+        }
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/secretary";
     }
 }

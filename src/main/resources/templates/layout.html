@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html th:fragment="main_layout(content)" xmlns:th="http://www.thymeleaf.org">
+<html th:fragment="main_layout(content)" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,11 +24,25 @@
                     </span>
                 </button>
                 <ul class="dropdown-menu shadow mt-2 p-2" aria-labelledby="notificationBell"
-                    style="min-width: 320px; max-width: 400px; max-height: 400px; overflow-y: auto;" data-testid="notification-list">
+                    style="min-width: 340px; max-width: 420px; max-height: 400px; overflow-y: auto;" data-testid="notification-list">
                     <li class="dropdown-header fw-bold text-dark border-bottom pb-2 mb-2 d-flex justify-content-between align-items-center">
                         <span>Notifications</span>
-                        <span th:if="${unreadNotificationsCount != null and unreadNotificationsCount > 0}"
-                              class="badge bg-danger rounded-pill" th:text="${unreadNotificationsCount} + ' unread'"></span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span th:if="${unreadNotificationsCount != null and unreadNotificationsCount > 0}"
+                                  class="badge bg-danger rounded-pill" th:text="${unreadNotificationsCount} + ' unread'"></span>
+                            <form sec:authorize="hasRole('TEACHER')" th:if="${unreadNotificationsCount != null and unreadNotificationsCount > 0}"
+                                  th:action="@{/teacher/notifications/read-all}" method="post" class="m-0">
+                                <button type="submit" class="btn btn-sm btn-link text-decoration-none p-0 text-primary" data-testid="btn-mark-all-read" style="font-size: 0.75rem;">
+                                    Mark all as read
+                                </button>
+                            </form>
+                            <form sec:authorize="hasRole('SECRETARY')" th:if="${unreadNotificationsCount != null and unreadNotificationsCount > 0}"
+                                  th:action="@{/secretary/notifications/read-all}" method="post" class="m-0">
+                                <button type="submit" class="btn btn-sm btn-link text-decoration-none p-0 text-primary" data-testid="btn-mark-all-read" style="font-size: 0.75rem;">
+                                    Mark all as read
+                                </button>
+                            </form>
+                        </div>
                     </li>
                     <li th:if="${#lists.isEmpty(notifications)}" class="text-muted text-center py-3" data-testid="no-notifications">
                         No notification
@@ -36,13 +50,32 @@
                     <li th:each="notif : ${notifications}" class="mb-2 p-2 rounded border-bottom"
                         th:classappend="${notif.status.name() == 'UNREAD'} ? 'bg-light' : ''"
                         data-testid="notification-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <span th:classappend="${notif.status.name() == 'UNREAD'} ? 'fw-bold text-dark' : 'text-secondary'"
-                                  th:text="${notif.message}" data-testid="notification-message"></span>
-                            <span th:if="${notif.status.name() == 'UNREAD'}" class="badge bg-danger ms-2">Unread</span>
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <span th:classappend="${notif.status.name() == 'UNREAD'} ? 'fw-bold text-dark' : 'text-secondary'"
+                                      th:text="${notif.message}" data-testid="notification-message"></span>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;"
+                                       th:text="${#temporals.format(notif.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                <span th:if="${notif.status.name() == 'UNREAD'}" class="badge bg-danger">Unread</span>
+                                <span th:if="${notif.status.name() == 'READ'}" class="badge bg-secondary">Read</span>
+                                <form sec:authorize="hasRole('TEACHER')" th:if="${notif.status.name() == 'UNREAD'}"
+                                      th:action="@{/teacher/notifications/{id}/read(id=${notif.id})}" method="post" class="m-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                            style="font-size: 0.7rem;" data-testid="btn-mark-read" title="Mark as read">
+                                        <i class="bi bi-check2"></i> Mark read
+                                    </button>
+                                </form>
+                                <form sec:authorize="hasRole('SECRETARY')" th:if="${notif.status.name() == 'UNREAD'}"
+                                      th:action="@{/secretary/notifications/{id}/read(id=${notif.id})}" method="post" class="m-0">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                            style="font-size: 0.7rem;" data-testid="btn-mark-read" title="Mark as read">
+                                        <i class="bi bi-check2"></i> Mark read
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;"
-                               th:text="${#temporals.format(notif.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
                     </li>
                 </ul>
             </div>

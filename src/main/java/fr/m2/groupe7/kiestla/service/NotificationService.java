@@ -58,6 +58,18 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void markAsRead(Long notifId, String login) {
+        User user = userRepository.findByLogin(login).orElse(null);
+        if (user == null) {
+            return;
+        }
+        Notif notif = notifRepository.findById(notifId).orElse(null);
+        if (notif != null && notif.getUser().getId().equals(user.getId())) {
+            notif.setStatus(NotifStatus.READ);
+            notifRepository.save(notif);
+        }
+    }
 
     @Transactional
     public void removeNotificationsForStudentAndModule(Long studentId, Long moduleId) {
