@@ -27,15 +27,18 @@ public class AbsenceService {
     private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
     private final ModuleService moduleService;
+    private final NotificationService notificationService;
 
     public AbsenceService(AbsenceRepository absenceRepository,
             ModuleRepository moduleRepository,
             UserRepository userRepository,
-            ModuleService moduleService) {
+            ModuleService moduleService,
+            NotificationService notificationService) {
         this.absenceRepository = absenceRepository;
         this.moduleRepository = moduleRepository;
         this.userRepository = userRepository;
         this.moduleService = moduleService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -84,6 +87,15 @@ public class AbsenceService {
         absence.setMotiveTitle(null);
         absence.setMotiveDescription(null);
         absence.setStatus(AbsenceStatus.UNJUSTIFIED);
+
+        if (absence.getStudent() != null && absence.getStudent().getId() != null
+                && absence.getModule() != null && absence.getModule().getId() != null) {
+            long unjustifiedCount = absenceRepository.countByStudentIdAndModuleIdAndStatus(
+                    absence.getStudent().getId(), absence.getModule().getId(), AbsenceStatus.UNJUSTIFIED);
+            if (unjustifiedCount >= 3) {
+                notificationService.notifyForUnjustifiedAbsences(absence.getStudent(), absence.getModule(), unjustifiedCount);
+            }
+        }
     }
 
     /**
@@ -116,6 +128,12 @@ public class AbsenceService {
         absence.setModule(moduleEntity);
         absence.setDate(date);
         absenceRepository.save(absence);
+
+        long unjustifiedCount = absenceRepository.countByStudentIdAndModuleIdAndStatus(
+                studentId, moduleId, AbsenceStatus.UNJUSTIFIED);
+        if (unjustifiedCount >= 3) {
+            notificationService.notifyForUnjustifiedAbsences(student, moduleEntity, unjustifiedCount);
+        }
     }
 
     @Transactional(readOnly = true)
