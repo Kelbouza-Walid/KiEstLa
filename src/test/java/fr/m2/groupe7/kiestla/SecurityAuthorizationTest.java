@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -22,6 +23,22 @@ class SecurityAuthorizationTest {
     @WithMockUser(roles = "STUDENT")
     void studentCannotAccessTeacherEndpoints() throws Exception {
         mockMvc.perform(get("/teacher"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "student1", roles = "STUDENT")
+    void studentCanViewOwnAbsencesPage() throws Exception {
+        mockMvc.perform(get("/student/absences"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mes absences")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("no-absences")));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotAccessStudentAbsencesPage() throws Exception {
+        mockMvc.perform(get("/student/absences"))
                 .andExpect(status().isForbidden());
     }
 

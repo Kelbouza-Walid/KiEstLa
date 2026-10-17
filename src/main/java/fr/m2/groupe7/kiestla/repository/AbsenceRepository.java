@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for Absence entities.
@@ -35,6 +36,9 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
 
     @EntityGraph(attributePaths = "module")
     List<Absence> findByStudentLoginOrderByDateDesc(String login);
+
+    @EntityGraph(attributePaths = "module")
+    Optional<Absence> findByIdAndStudentLogin(Long id, String login);
 
     void deleteByModuleId(Long moduleId);
 }
