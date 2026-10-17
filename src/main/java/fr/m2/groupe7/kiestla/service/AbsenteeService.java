@@ -3,6 +3,7 @@ package fr.m2.groupe7.kiestla.service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,7 @@ import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
 
 /**
  * Lists the students who reached the threshold of UNJUSTIFIED absences
- * in one of the modules of a teacher.
+ * in a module (teacher: his modules, secretary: all modules).
  */
 @Service
 public class AbsenteeService {
@@ -39,9 +40,36 @@ public class AbsenteeService {
 
     @Transactional(readOnly = true)
     public List<AbsenteeSummary> getAbsenteesForTeacher(String teacherLogin, SortBy sortBy) {
+        List<AbsenteeSummary> absentees = collect(moduleService.getModulesForTeacher(teacherLogin));
+        absentees.sort(comparatorFor(sortBy));
+        return absentees;
+    }
+
+    /**
+     * For the secretary: all the modules, optionally filtered by module and by
+     * student name (first name, last name or both, case-insensitive).
+     */
+    @Transactional(readOnly = true)
+    public List<AbsenteeSummary> getAbsenteesForSecretary(Long moduleId, String studentQuery, SortBy sortBy) {
+        List<ModuleSummary> modules = moduleService.getAllModulesSummary().stream()
+                .filter(m -> moduleId == null || m.id().equals(moduleId))
+                .toList();
+
+        String needle = studentQuery == null ? "" : studentQuery.trim().toLowerCase(Locale.ROOT);
+
+        List<AbsenteeSummary> absentees = collect(modules).stream()
+                .filter(a -> needle.isEmpty()
+                        || (a.firstName() + " " + a.lastName()).toLowerCase(Locale.ROOT).contains(needle))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        absentees.sort(comparatorFor(sortBy));
+        return absentees;
+    }
+
+    private List<AbsenteeSummary> collect(List<ModuleSummary> modules) {
         List<AbsenteeSummary> absentees = new ArrayList<>();
 
-        for (ModuleSummary module : moduleService.getModulesForTeacher(teacherLogin)) {
+        for (ModuleSummary module : modules) {
             Map<Long, List<Absence>> unjustifiedByStudent = absenceRepository.findByModuleId(module.id())
                     .stream()
                     .filter(absence -> absence.getStatus() == AbsenceStatus.UNJUSTIFIED)
@@ -60,8 +88,6 @@ public class AbsenteeService {
                 }
             }
         }
-
-        absentees.sort(comparatorFor(sortBy));
         return absentees;
     }
 
