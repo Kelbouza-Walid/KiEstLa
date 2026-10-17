@@ -16,6 +16,9 @@ import fr.m2.groupe7.kiestla.dto.ModuleSummary;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
 
+import fr.m2.groupe7.kiestla.service.NotificationService;
+import org.springframework.security.core.Authentication;
+
 /**
  * Secretary Page controller
  */
@@ -26,12 +29,14 @@ public class SecretaryController {
     private final AbsenceService absenceService;
     private final ModuleService moduleService;
     private final AbsenteeService absenteeService;
+    private final NotificationService notificationService;
 
     public SecretaryController(AbsenceService absenceService, ModuleService moduleService,
-                               AbsenteeService absenteeService) {
+                               AbsenteeService absenteeService, NotificationService notificationService) {
         this.absenceService = absenceService;
         this.moduleService = moduleService;
         this.absenteeService = absenteeService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/absence/{id}/justify")
@@ -69,9 +74,15 @@ public class SecretaryController {
     public String index(@RequestParam(required = false) Long moduleId,
                         @RequestParam(required = false) String student,
                         @RequestParam(defaultValue = "MODULE") AbsenteeService.SortBy sort,
+                        Authentication authentication,
                         Model model) {
         List<AbsenceSummary> absences = absenceService.getAbsences();
         List<ModuleSummary> modules = moduleService.getAllModulesSummary();
+
+        if (authentication != null) {
+            model.addAttribute("notifications", notificationService.getNotificationsForUser(authentication.getName()));
+            model.addAttribute("unreadNotificationsCount", notificationService.getUnreadCountForUser(authentication.getName()));
+        }
 
         model.addAttribute("absences", absences);
         model.addAttribute("modules", modules);
@@ -80,5 +91,13 @@ public class SecretaryController {
         model.addAttribute("studentQuery", student);
         model.addAttribute("sort", sort.name());
         return "secretary";
+    }
+
+    @PostMapping("/notifications/read-all")
+    public String markNotificationsAsRead(Authentication authentication) {
+        if (authentication != null) {
+            notificationService.markAllAsRead(authentication.getName());
+        }
+        return "redirect:/secretary";
     }
 }
