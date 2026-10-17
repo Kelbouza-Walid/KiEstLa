@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "notifs")
 @Getter @Setter
@@ -17,6 +19,23 @@ public class Notif {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false, length = 1000)
+    private String message;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private NotifStatus status = NotifStatus.UNREAD;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Notif() {
+    }
+
+    public Notif(User user, String message) {
+        this.user = user;
+        this.message = message;
+        this.status = NotifStatus.UNREAD;
+        this.createdAt = LocalDateTime.now();
+    }
 }
