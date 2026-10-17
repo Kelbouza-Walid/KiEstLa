@@ -121,7 +121,7 @@ class AbsenceNotificationIntegrationTest {
         assertEquals(1, secretaryNotifs.size());
         assertEquals(0, otherTeacherNotifs.size());
 
-        String expectedMessage = "John Doe a plus de 3 absence injustifié dans le module Functional Testing";
+        String expectedMessage = "John Doe has more than 3 unexcused absences in the module Functional Testing";
         assertEquals(expectedMessage, teacherNotifs.get(0).getMessage());
         assertEquals(NotifStatus.UNREAD, teacherNotifs.get(0).getStatus());
 
@@ -130,9 +130,34 @@ class AbsenceNotificationIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "secretary1", roles = "SECRETARY")
+    void justifyingAbsence_whenCountDropsBelow3_removesNotifications() throws Exception {
+        createAbsence(student, module, LocalDate.now().minusDays(3));
+        createAbsence(student, module, LocalDate.now().minusDays(2));
+        Absence third = createAbsence(student, module, LocalDate.now().minusDays(1));
+
+        // Create notification as would happen when 3rd absence is recorded
+        notifRepository.save(new Notif(teacherInModule, "notif", student.getId(), module.getId()));
+        notifRepository.save(new Notif(secretary, "notif", student.getId(), module.getId()));
+
+        assertEquals(2, notifRepository.count());
+
+        // Secretary justifies the 3rd absence
+        mockMvc.perform(post("/secretary/absence/{id}/justify", third.getId())
+                .with(csrf())
+                .param("motiveTitle", "Medical")
+                .param("motiveDescription", "Doctor appointment"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/secretary"));
+
+        // Unjustified absence count is now 2 (< 3) -> notifications must be removed!
+        assertEquals(0, notifRepository.count());
+    }
+
+    @Test
     @WithMockUser(username = "teacher1", roles = "TEACHER")
-    void teacherPage_displaysNotificationBellWithRedBadgeAndMessage() throws Exception {
-        Notif notif = new Notif(teacherInModule, "John Doe a plus de 3 absence injustifié dans le module Functional Testing");
+    void teacherPage_displaysNotificationBellWithButtons() throws Exception {
+        Notif notif = new Notif(teacherInModule, "John Doe has more than 3 unexcused absences in the module Functional Testing");
         notifRepository.save(notif);
 
         mockMvc.perform(get("/teacher"))
@@ -141,14 +166,32 @@ class AbsenceNotificationIntegrationTest {
                 .andExpect(model().attribute("unreadNotificationsCount", 1L))
                 .andExpect(content().string(containsString("btn-notifications")))
                 .andExpect(content().string(containsString("notification-badge")))
-                .andExpect(content().string(containsString("John Doe a plus de 3 absence injustifié dans le module Functional Testing")));
+                .andExpect(content().string(containsString("btn-mark-all-read")))
+                .andExpect(content().string(containsString("btn-mark-read")))
+                .andExpect(content().string(containsString("John Doe has more than 3 unexcused absences in the module Functional Testing")));
+    }
+
+    @Test
+    @WithMockUser(username = "teacher1", roles = "TEACHER")
+    void markNotificationAsRead_updatesStatusToRead() throws Exception {
+        Notif notif = new Notif(teacherInModule, "John Doe has more than 3 unexcused absences in the module Functional Testing");
+        notif = notifRepository.save(notif);
+
+        assertEquals(NotifStatus.UNREAD, notif.getStatus());
+
+        mockMvc.perform(post("/teacher/notifications/{id}/read", notif.getId())
+                .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        Notif updated = notifRepository.findById(notif.getId()).orElseThrow();
+        assertEquals(NotifStatus.READ, updated.getStatus());
     }
 
     @Test
     @WithMockUser(username = "secretary1", roles = "SECRETARY")
-    void secretaryPage_displaysNotificationBellWithRedBadgeAndMessage() throws Exception {
-        Notif notif = new Notif(secretary, "John Doe a plus de 3 absence injustifié dans le module Functional Testing");
-        notifRepository.save(notif);
+    void secretaryPage_displaysNotificationBellWithButtons() throws Exception {
+        Notif notif = new Notif(secretary, "John Doe has more than 3 unexcused absences in the module Functional Testing");
+        notif = notifRepository.save(notif);
 
         mockMvc.perform(get("/secretary"))
                 .andExpect(status().isOk())
@@ -156,7 +199,17 @@ class AbsenceNotificationIntegrationTest {
                 .andExpect(model().attribute("unreadNotificationsCount", 1L))
                 .andExpect(content().string(containsString("btn-notifications")))
                 .andExpect(content().string(containsString("notification-badge")))
-                .andExpect(content().string(containsString("John Doe a plus de 3 absence injustifié dans le module Functional Testing")));
+                .andExpect(content().string(containsString("btn-mark-all-read")))
+                .andExpect(content().string(containsString("btn-mark-read")))
+                .andExpect(content().string(containsString("John Doe has more than 3 unexcused absences in the module Functional Testing")));
+
+        // Mark all as read
+        mockMvc.perform(post("/secretary/notifications/read-all")
+                .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        Notif updated = notifRepository.findById(notif.getId()).orElseThrow();
+        assertEquals(NotifStatus.READ, updated.getStatus());
     }
 
     private User createUser(String firstName, String lastName, String login, Role role) {

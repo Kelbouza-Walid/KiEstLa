@@ -69,8 +69,10 @@ class NotificationServiceTest {
         assertEquals(3, savedNotifs.size());
 
         for (Notif notif : savedNotifs) {
-            assertEquals("John Doe a plus de 3 absence injustifié dans le module Mathematics", notif.getMessage());
+            assertEquals("John Doe has more than 3 unexcused absences in the module Mathematics", notif.getMessage());
             assertEquals(NotifStatus.UNREAD, notif.getStatus());
+            assertEquals(student.getId(), notif.getStudentId());
+            assertEquals(module.getId(), notif.getModuleId());
         }
 
         List<Long> recipientIds = savedNotifs.stream().map(n -> n.getUser().getId()).toList();
@@ -111,6 +113,30 @@ class NotificationServiceTest {
 
         assertEquals(NotifStatus.READ, notif1.getStatus());
         verify(notifRepository).save(notif1);
+    }
+
+    @Test
+    void markAsRead_singleNotification_marksAsRead() {
+        Notif notif = new Notif(teacher1, "Msg 1");
+        notif.setStatus(NotifStatus.UNREAD);
+
+        when(userRepository.findByLogin("aturing")).thenReturn(Optional.of(teacher1));
+        when(notifRepository.findById(42L)).thenReturn(Optional.of(notif));
+
+        notificationService.markAsRead(42L, "aturing");
+
+        assertEquals(NotifStatus.READ, notif.getStatus());
+        verify(notifRepository).save(notif);
+    }
+
+    @Test
+    void removeNotificationsForStudentAndModule_deletesMatchingNotifications() {
+        Notif notif = new Notif(teacher1, "Msg", student.getId(), module.getId());
+        when(notifRepository.findByStudentIdAndModuleId(student.getId(), module.getId())).thenReturn(List.of(notif));
+
+        notificationService.removeNotificationsForStudentAndModule(student.getId(), module.getId());
+
+        verify(notifRepository).deleteAll(List.of(notif));
     }
 
     private User createUser(Long id, String firstName, String lastName, String login, Role role) {

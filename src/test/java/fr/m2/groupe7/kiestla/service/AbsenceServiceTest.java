@@ -128,6 +128,29 @@ class AbsenceServiceTest {
     }
 
     @Test
+    void justifyAbsence_whenCountDropsBelow3_removesNotification() {
+        User student = new User();
+        student.setId(10L);
+        Module module = new Module();
+        module.setId(20L);
+
+        Absence absence = new Absence();
+        absence.setId(1L);
+        absence.setStudent(student);
+        absence.setModule(module);
+        absence.setStatus(AbsenceStatus.UNJUSTIFIED);
+
+        when(absenceRepository.findById(1L)).thenReturn(Optional.of(absence));
+        when(absenceRepository.countByStudentIdAndModuleIdAndStatus(10L, 20L, AbsenceStatus.UNJUSTIFIED)).thenReturn(2L);
+
+        JustifyAbsenceRequest request = new JustifyAbsenceRequest("Sick", "Medical certificate");
+        absenceService.justifyAbsence(1L, request);
+
+        assertEquals(AbsenceStatus.JUSTIFIED, absence.getStatus());
+        verify(notificationService).removeNotificationsForStudentAndModule(10L, 20L);
+    }
+
+    @Test
     void justifyAbsence_absenceNotFound() {
         when(absenceRepository.findById(99L)).thenReturn(Optional.empty());
 
