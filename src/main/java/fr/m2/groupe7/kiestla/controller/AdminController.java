@@ -118,4 +118,25 @@ public class AdminController {
                 "User " + updated.login() + " has been updated.");
         return "redirect:/admin";
     }
+
+    /**
+     * Deletes a user.
+     *
+     * @param id the id of the user to delete
+     * @param principal the currently authenticated user
+     * @param redirectAttributes redirect attributes to carry the success message
+     * @return a redirection to the admin dashboard
+     */
+    @PostMapping("/users/{id}/delete")
+    public String deleteUser(
+            @PathVariable Long id,
+            Principal principal,
+            RedirectAttributes redirectAttributes) {
+        AdminUserSummary deleted = userService.deleteUser(id, principal != null ? principal.getName() : null);
+        String fullName = (deleted.firstName() + " " + deleted.lastName()).toLowerCase();
+        String message = "l'utilisateur " + fullName + " a bien été supprimer";
+        redirectAttributes.addFlashAttribute("deleteMessage", message);
+        redirectAttributes.addFlashAttribute("deleteSuccessMessage", message);
+        return "redirect:/admin";
+    }
 }
