@@ -59,6 +59,39 @@ class ModuleServiceMembersTest {
     }
 
     @Test
+    void getModuleMembers_moduleWithoutReferenceTeacher() {
+        User teacher = createUser(2L, "Marilleau", Role.TEACHER);
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(createModule(null)));
+        when(userRepository.findByRole(Role.TEACHER)).thenReturn(List.of(teacher));
+        when(userRepository.findByRole(Role.STUDENT)).thenReturn(List.of());
+
+        ModuleMembers result = moduleService.getModuleMembers(10L);
+
+        assertNull(result.referenceTeacherId());
+        // every teacher can be checked when there is no reference teacher
+        assertEquals(List.of(new ModuleMembers.Member(UserSummary.from(teacher), false)), result.teachers());
+    }
+
+    @Test
+    void getModuleMembers_unknownModule() {
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> moduleService.getModuleMembers(10L));
+    }
+
+    @Test
+    void updateMembers_unknownReferenceTeacher() {
+        User oldReference = createUser(1L, "Bouquet", Role.TEACHER);
+        Module module = createModule(oldReference);
+        when(moduleRepository.findWithStudentsById(10L)).thenReturn(Optional.of(module));
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> moduleService.updateMembers(10L, 99L, null, null));
+        assertSame(oldReference, module.getReferenceTeacher());
+        verify(moduleRepository, never()).save(any());
+    }
+
+    @Test
     void getModulesForTeacher_returnsBothEnrolledAndReferenceModulesWithoutDuplicates() {
         User teacher = createUser(1L, "Turing", Role.TEACHER);
         teacher.setLogin("aturing");

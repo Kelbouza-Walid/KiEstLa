@@ -137,9 +137,10 @@ public class StudentAbsenceSteps {
         assertEquals(List.of("M1", "M2"), page.getByTestId("absence-module").allTextContents());
     }
 
+    // Shared by the student features: "No absences found" (922), "You are not enrolled in any modules" (931)
     @Then("I should see a message {string}")
     public void i_should_see_a_message(String message) {
-        assertThat(page.getByTestId("no-absences")).hasText(message);
+        assertThat(page.getByText(message, new Page.GetByTextOptions().setExact(true))).isVisible();
     }
 
     @Then("I should only see absences from module {string}")
