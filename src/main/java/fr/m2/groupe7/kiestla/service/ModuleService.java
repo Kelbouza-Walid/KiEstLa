@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,7 +90,7 @@ public class ModuleService {
     }
 
     /**
-     * Returns a ModuleSummary for every modules of a teacher.
+     * Returns a ModuleSummary for every module of a teacher (enrolled or reference teacher).
      *
      * @throws ResourceNotFoundException if the user or module does not exist
      */
@@ -97,8 +98,13 @@ public class ModuleService {
     public List<ModuleSummary> getModulesForTeacher(String teacherLogin) {
         User teacher = userRepository.findModulesByLogin(teacherLogin)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé : " + teacherLogin));
-        return teacher.getModules().stream()
+
+        List<Module> referenced = moduleRepository.findByReferenceTeacherIdOrderByName(teacher.getId());
+
+        return Stream.concat(teacher.getModules().stream(), referenced.stream())
                 .map(ModuleSummary::from)
+                .distinct()
+                .sorted(Comparator.comparing(ModuleSummary::name))
                 .toList();
     }
 

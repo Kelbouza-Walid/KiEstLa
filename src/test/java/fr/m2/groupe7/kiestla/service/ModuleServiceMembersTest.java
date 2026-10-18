@@ -59,6 +59,38 @@ class ModuleServiceMembersTest {
     }
 
     @Test
+    void getModulesForTeacher_returnsBothEnrolledAndReferenceModulesWithoutDuplicates() {
+        User teacher = createUser(1L, "Turing", Role.TEACHER);
+        teacher.setLogin("aturing");
+
+        Module enrolledModule = new Module();
+        enrolledModule.setId(10L);
+        enrolledModule.setName("Algorithms");
+
+        Module referenceModule = new Module();
+        referenceModule.setId(20L);
+        referenceModule.setName("Cryptography");
+        referenceModule.setReferenceTeacher(teacher);
+
+        Module bothModule = new Module();
+        bothModule.setId(30L);
+        bothModule.setName("Logic");
+        bothModule.setReferenceTeacher(teacher);
+
+        teacher.getModules().add(enrolledModule);
+        teacher.getModules().add(bothModule);
+
+        when(userRepository.findModulesByLogin("aturing")).thenReturn(Optional.of(teacher));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(1L)).thenReturn(List.of(referenceModule, bothModule));
+
+        List<fr.m2.groupe7.kiestla.dto.ModuleSummary> result = moduleService.getModulesForTeacher("aturing");
+
+        assertEquals(3, result.size());
+        List<String> names = result.stream().map(fr.m2.groupe7.kiestla.dto.ModuleSummary::name).toList();
+        assertEquals(List.of("Algorithms", "Cryptography", "Logic"), names);
+    }
+
+    @Test
     void updateMembers_enrollsSelectedAndUnenrollsOthers() {
         User reference = createUser(1L, "Bouquet", Role.TEACHER);
         User oldTeacher = createUser(2L, "Marilleau", Role.TEACHER);
