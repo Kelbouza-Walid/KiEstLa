@@ -43,4 +43,6 @@ public interface AbsenceRepository extends JpaRepository<Absence, Long> {
     void deleteByModuleId(Long moduleId);
 
     void deleteByStudentId(Long studentId);
+
+    long countByStudentIdAndModuleIdAndStatus(Long studentId, Long moduleId, AbsenceStatus status);
 }

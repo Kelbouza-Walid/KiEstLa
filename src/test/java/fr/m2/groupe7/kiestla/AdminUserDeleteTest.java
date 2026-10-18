@@ -23,6 +23,7 @@ import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.Comment;
 import fr.m2.groupe7.kiestla.entity.Module;
 import fr.m2.groupe7.kiestla.entity.Notif;
+import fr.m2.groupe7.kiestla.entity.NotifStatus;
 import fr.m2.groupe7.kiestla.entity.Role;
 import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
@@ -88,7 +89,8 @@ class AdminUserDeleteTest {
 
         Notif notif = new Notif();
         notif.setUser(student);
-        notif.setStatus("UNREAD");
+        notif.setMessage("Test notification");
+        notif.setStatus(NotifStatus.UNREAD);
         notifRepository.save(notif);
     }
 

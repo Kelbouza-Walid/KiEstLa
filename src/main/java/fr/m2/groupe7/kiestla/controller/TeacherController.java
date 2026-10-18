@@ -2,6 +2,7 @@ package fr.m2.groupe7.kiestla.controller;
 
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
+import fr.m2.groupe7.kiestla.service.NotificationService;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -20,17 +22,24 @@ public class TeacherController {
 
     private final ModuleService moduleService;
     private final AbsenceService absenceService;
+    private final NotificationService notificationService;
 
     public TeacherController(
             ModuleService moduleService,
-            AbsenceService absenceService) {
+            AbsenceService absenceService,
+            NotificationService notificationService) {
         this.moduleService = moduleService;
         this.absenceService = absenceService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/teacher")
     public String teacherPage(Authentication authentication, Model model) {
         model.addAttribute("modules", moduleService.getModulesForTeacher(authentication.getName()));
+        if (authentication != null) {
+            model.addAttribute("notifications", notificationService.getNotificationsForUser(authentication.getName()));
+            model.addAttribute("unreadNotificationsCount", notificationService.getUnreadCountForUser(authentication.getName()));
+        }
         return "teacher";
     }
 
@@ -69,5 +78,26 @@ public class TeacherController {
         absenceService.addAbsence(id, absentStudentId, date, authentication.getName());
         redirectAttributes.addFlashAttribute("successMessage", "L'absence a été ajoutée.");
         return "redirect:/module-details/" + id;
+    }
+
+    @PostMapping("/teacher/notifications/read-all")
+    public String markNotificationsAsRead(
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
+        if (authentication != null) {
+            notificationService.markAllAsRead(authentication.getName());
+        }
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/teacher";
+    }
+
+    @PostMapping("/teacher/notifications/{id}/read")
+    public String markNotificationAsRead(
+            @PathVariable Long id,
+            @RequestHeader(value = "Referer", required = false) String referer,
+            Authentication authentication) {
+        if (authentication != null) {
+            notificationService.markAsRead(id, authentication.getName());
+        }
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/teacher";
     }
 }

@@ -4,6 +4,7 @@ import fr.m2.groupe7.kiestla.dto.AbsenceSummary;
 import fr.m2.groupe7.kiestla.dto.ModuleDetails;
 import fr.m2.groupe7.kiestla.service.AbsenceService;
 import fr.m2.groupe7.kiestla.service.ModuleService;
+import fr.m2.groupe7.kiestla.service.NotificationService;
 import fr.m2.groupe7.kiestla.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -24,14 +25,17 @@ public class ModuleDetailsController {
     private final AbsenceService absenceService;
     private final ModuleService moduleService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public ModuleDetailsController(
             AbsenceService absenceService,
             ModuleService moduleService,
-            UserService userService) {
+            UserService userService,
+            NotificationService notificationService) {
         this.absenceService = absenceService;
         this.moduleService = moduleService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -69,6 +73,10 @@ public class ModuleDetailsController {
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isReferenceTeacher", isReferenceTeacher);
         model.addAttribute("backUrl", isTeacher? "/teacher" : isSecretary? "/secretary" : isAdmin? "/admin/modules" : "/student");
+        if (isTeacher || isSecretary) {
+            model.addAttribute("notifications", notificationService.getNotificationsForUser(authentication.getName()));
+            model.addAttribute("unreadNotificationsCount", notificationService.getUnreadCountForUser(authentication.getName()));
+        }
         if (isTeacher) {
             model.addAttribute("availableStudents", userService.getAvailableStudentsForModule(module));
             if (isReferenceTeacher) {
