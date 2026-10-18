@@ -25,7 +25,9 @@ import fr.m2.groupe7.kiestla.entity.User;
 import fr.m2.groupe7.kiestla.exception.BusinessException;
 import fr.m2.groupe7.kiestla.exception.ResourceNotFoundException;
 import fr.m2.groupe7.kiestla.repository.AbsenceRepository;
+import fr.m2.groupe7.kiestla.repository.CommentRepository;
 import fr.m2.groupe7.kiestla.repository.ModuleRepository;
+import fr.m2.groupe7.kiestla.repository.NotifRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,6 +53,12 @@ class UserServiceTest {
 
     @Mock
     private AbsenceRepository absenceRepository;
+
+    @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private NotifRepository notifRepository;
 
     @InjectMocks
     private UserService userService;
@@ -421,6 +429,46 @@ class UserServiceTest {
         when(userRepository.findWithModulesById(5L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> userService.getUserDetails(5L));
+    }
+
+    @Test
+    void deleteUser_success() {
+        User user = createUser(10L, "John", "Doe", "jdoe", Role.STUDENT);
+        Module module = createModule(1L, "Mathématiques");
+        user.getModules().add(module);
+
+        when(userRepository.findWithModulesById(10L)).thenReturn(Optional.of(user));
+        when(moduleRepository.findByReferenceTeacherIdOrderByName(10L)).thenReturn(List.of());
+        when(commentRepository.findByCommenterId(10L)).thenReturn(List.of());
+        when(absenceRepository.findByStudentId(10L)).thenReturn(List.of());
+        when(notifRepository.findByUserId(10L)).thenReturn(List.of());
+
+        AdminUserSummary deleted = userService.deleteUser(10L, "admin");
+
+        assertEquals(10L, deleted.id());
+        assertEquals("John", deleted.firstName());
+        assertEquals("Doe", deleted.lastName());
+        assertEquals("jdoe", deleted.login());
+        assertTrue(user.getModules().isEmpty());
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void deleteUser_cannotDeleteOwnAccount() {
+        User admin = createUser(1L, "Admin", "User", "admin", Role.ADMIN);
+        when(userRepository.findWithModulesById(1L)).thenReturn(Optional.of(admin));
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> userService.deleteUser(1L, "admin"));
+        assertEquals("You cannot delete your own account.", ex.getMessage());
+        verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteUser_notFound() {
+        when(userRepository.findWithModulesById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.deleteUser(99L, "admin"));
+        verify(userRepository, never()).delete(any());
     }
 
     private Module createModule(Long id, String name) {

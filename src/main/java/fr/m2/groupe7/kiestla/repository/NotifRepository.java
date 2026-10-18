@@ -10,4 +10,5 @@ import java.util.List;
 public interface NotifRepository extends JpaRepository<Notif, Long> {
     List<Notif> findByUserId(Long userId);
     List<Notif> findByUserIdAndStatus(Long userId, String status);
+    void deleteByUserId(Long userId);
 }
