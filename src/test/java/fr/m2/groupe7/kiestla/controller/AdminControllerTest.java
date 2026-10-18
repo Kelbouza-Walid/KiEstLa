@@ -284,6 +284,40 @@ class AdminControllerTest {
         verify(userService, never()).getUser(any());
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void deleteUser_success() throws Exception {
+        AdminUserSummary user = new AdminUserSummary(10L, "John", "Doe", "jdoe", Role.STUDENT);
+        when(userService.deleteUser(10L, "admin")).thenReturn(user);
+
+        mockMvc.perform(post("/admin/users/10/delete").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("deleteMessage", "l'utilisateur john doe a bien été supprimer"))
+                .andExpect(flash().attribute("deleteSuccessMessage", "l'utilisateur john doe a bien été supprimer"));
+
+        verify(userService).deleteUser(10L, "admin");
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void deleteUser_notFound() throws Exception {
+        when(userService.deleteUser(99L, "admin")).thenThrow(new ResourceNotFoundException("User not found."));
+
+        mockMvc.perform(post("/admin/users/99/delete").with(csrf()).header("Referer", "/admin"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("errorMessage", "User not found."));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotDeleteUser() throws Exception {
+        mockMvc.perform(post("/admin/users/10/delete").with(csrf()))
+                .andExpect(status().isForbidden());
+        verify(userService, never()).deleteUser(any(), any());
+    }
+
     private org.springframework.test.web.servlet.ResultActions performValidUpdate() throws Exception {
         return mockMvc.perform(post("/admin/users/5").with(csrf())
                 .param("firstName", "Noa")

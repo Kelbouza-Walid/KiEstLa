@@ -15,4 +15,8 @@ import fr.m2.groupe7.kiestla.entity.Comment;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 	@EntityGraph(attributePaths = "commenter")
 	List<Comment> findByAbsenceIdOrderByDateAsc(Long absenceId);
+
+	List<Comment> findByCommenterId(Long commenterId);
+
+	void deleteByCommenterId(Long commenterId);
 }
