@@ -6,12 +6,14 @@ Feature: Logout
 Background:
   Given that I am logged in
 
+@implemented
 Scenario: Logging out
   When I click a logout button
   Then I shouldn't stay identified
   And get my access revoked
   And should be redirected to the login page
 
+@implemented
 Scenario: Logout failed
   When I click the logout button
   Then I should see a message indicating what the error is

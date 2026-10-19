@@ -6,17 +6,20 @@ Feature: Password change
 Background:
   Given I was already registered in the database and I am authenticated
 
+@implemented
 Scenario: A successful password change
   When I enter my new password 
   And I click a button to confirm
   Then I should get a message notifying me of the successful operation
 
+@implemented
 Scenario: New password is identical to old password
   When I enter my new password 
   And I click a button to confirm
   Then I should see a message indicating that the two passwords are identical
   And I get to retry
 
+@implemented
 Scenario: Password change failed
   When I enter my new password 
   And I click a button to confirm
