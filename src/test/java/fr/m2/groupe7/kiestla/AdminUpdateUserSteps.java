@@ -35,6 +35,9 @@ public class AdminUpdateUserSteps {
     private static final Role NEW_ROLE = Role.SECRETARY;
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -49,9 +52,7 @@ public class AdminUpdateUserSteps {
 
     @Given("The user exists")
     public void the_user_exists() {
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         User admin = new User();
         admin.setFirstName("System");

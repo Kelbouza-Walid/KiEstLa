@@ -28,6 +28,9 @@ public class TeacherAddStudentTest {
     private static final String BASE_URL = "http://localhost:8080";
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -80,9 +83,7 @@ public class TeacherAddStudentTest {
             return;
         }
 
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         referenceTeacher = createUser("Ref", "Teacher", "testteacher", Role.TEACHER);
         student = createUser("Alice", "Durand", "student1", Role.STUDENT);

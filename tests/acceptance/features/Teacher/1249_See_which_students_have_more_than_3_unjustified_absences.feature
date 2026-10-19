@@ -5,11 +5,13 @@ Feature: See which students have 3 or more absences
   
 Background: I am logged in
   
+@implemented
 Scenario: Sorting absences by modules
   When I open the list of absenteist students
   And I select "Sort by module"
   Then I should see the list of absences sorted by module
 
+@implemented
 Scenario: Sorting absences by student
   When I open the list of absenteist students
   And I select "Sort by student"
