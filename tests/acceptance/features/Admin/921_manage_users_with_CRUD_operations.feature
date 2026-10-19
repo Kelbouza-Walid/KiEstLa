@@ -32,6 +32,7 @@ Feature: manage users with CRUD operations
     And I confirm the update
     Then The user's information is updated in the system
 
+  @implemented
   Scenario: remove users
     Given The user exists
     When I select the user to remove
