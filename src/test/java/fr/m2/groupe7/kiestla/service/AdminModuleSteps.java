@@ -132,10 +132,12 @@ public class AdminModuleSteps {
         assertThat(getPage().getByTestId("module-row")).hasCount(1);
     }
 
+    // Shared by the users (921) and modules (923) features: once the item to remove is selected,
+    // a single delete button is displayed, for a module or for a user
     @When("I confirm the deletion")
     public void i_confirm_the_deletion() {
         getPage().onceDialog(dialog -> dialog.accept());
-        getPage().getByTestId("btn-delete-module").click();
+        getPage().locator("[data-testid='btn-delete-module'], [data-testid='btn-delete-user']").click();
     }
 
     @Then("The module is no longer registered in the system")

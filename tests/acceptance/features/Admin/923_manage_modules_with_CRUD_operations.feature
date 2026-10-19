@@ -5,6 +5,7 @@ Feature: manage modules with CRUD operations
 
   Background: I have already logged in
 
+  @implemented
   Scenario: lookup modules
     Given Modules exist in the system
     When I search for a module by its name

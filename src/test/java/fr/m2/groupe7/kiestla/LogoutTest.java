@@ -24,6 +24,9 @@ import io.cucumber.java.en.When;
 public class LogoutTest{
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -47,9 +50,7 @@ public class LogoutTest{
 
     @Given("that I am logged in")
     public void that_i_am_logged_in() {
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         User secretary = new User();
         secretary.setFirstName("FirstName");
@@ -108,9 +109,5 @@ public class LogoutTest{
         assertThat(getPage().getByTestId("logout-error")).not().isEmpty();
     }
 
-    @Then("I get to retry")
-    public void i_get_to_retry() {
-        assertThat(getPage().getByTestId("btn-logout")).isVisible();
-        assertThat(getPage().getByTestId("btn-logout")).isEnabled();
-    }
+    // "I get to retry" is shared with the login and password change features: see SharedSteps
 }

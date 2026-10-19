@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import fr.m2.groupe7.kiestla.PlaywrightHooks;
+import fr.m2.groupe7.kiestla.TestDataCleaner;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.microsoft.playwright.Page;
@@ -33,6 +34,9 @@ public class TeacherAddAbsenceSteps {
     private static final LocalDate ABSENCE_DATE = LocalDate.of(2026, 10, 12);
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -52,9 +56,7 @@ public class TeacherAddAbsenceSteps {
     @Given("The absent student is registered in the module I teach")
     public void the_absent_student_is_registered_in_the_module_i_teach() {
         // Start from a clean database
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         User teacher = createUser("Ref", "Teacher", "teacher", Role.TEACHER);
         student = createUser("Alice", "Durand", "student1", Role.STUDENT);

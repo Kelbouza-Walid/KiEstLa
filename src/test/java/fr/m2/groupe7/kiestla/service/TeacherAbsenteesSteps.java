@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.microsoft.playwright.Page;
 
 import fr.m2.groupe7.kiestla.PlaywrightHooks;
+import fr.m2.groupe7.kiestla.TestDataCleaner;
 import fr.m2.groupe7.kiestla.entity.Absence;
 import fr.m2.groupe7.kiestla.entity.AbsenceStatus;
 import fr.m2.groupe7.kiestla.entity.Module;
@@ -33,6 +34,9 @@ public class TeacherAbsenteesSteps {
     private static final String BASE_URL = "http://localhost:8080";
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -47,9 +51,7 @@ public class TeacherAbsenteesSteps {
     public void i_am_in_several_different_modules() {
         // The shared Background step "I am logged in" (TeacherAddStudentTest) has already run:
         // we start from a clean database and log in again on our own page.
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         User teacher = createUser("Ref", "Teacher", "testteacher", Role.TEACHER);
         User zoe = createUser("Zoe", "Adams", "zadams", Role.STUDENT);
@@ -109,9 +111,7 @@ public class TeacherAbsenteesSteps {
     // The Background of the feature has no step, so the data is prepared here.
     @When("I open the list of absenteist students")
     public void i_open_the_list_of_absenteist_students() {
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        testDataCleaner.cleanDatabase();
 
         User teacher = createUser("Ref", "Teacher", "teacher", Role.TEACHER);
         User zoe = createUser("Zoe", "Adams", "zadams", Role.STUDENT);
@@ -144,13 +144,20 @@ public class TeacherAbsenteesSteps {
         getPage().getByText(option, new Page.GetByTextOptions().setExact(true)).click();
     }
 
+    // Shared by 1247 (all the absences of my modules) and 1249 (students with 3 or more unjustified absences)
     @Then("I should see the list of absences sorted by module")
     public void i_should_see_the_list_of_absences_sorted_by_module() {
-        // Alice is excluded, so only 2 rows. Module order: Algo (Bob) then Maths (Zoe)
-        assertThat(getPage().getByTestId("absence-row")).hasCount(3);
-        assertEquals(List.of("Algo", "Algo", "Maths"), getPage().getByTestId("absence-module").allTextContents());
-        assertEquals(List.of("Adams", "Zimmer", "Adams"), getPage().getByTestId("absence-last-name").allTextContents());
-        return;
+        if (isGlobalAbsencesPage()) {
+            // 1247: every absence of my modules, Algo (Zoe, Bob) then Maths (Zoe)
+            assertThat(getPage().getByTestId("absence-row")).hasCount(3);
+            assertEquals(List.of("Algo", "Algo", "Maths"), getPage().getByTestId("absence-module").allTextContents());
+            assertEquals(List.of("Adams", "Zimmer", "Adams"), getPage().getByTestId("absence-last-name").allTextContents());
+            return;
+        }
+        // 1249: Alice has only 2 unjustified absences and is excluded. Module order: Algo (Bob) then Maths (Zoe)
+        assertThat(getPage().getByTestId("absentee-row")).hasCount(2);
+        assertEquals(List.of("Algo", "Maths"), getPage().getByTestId("absentee-module").allTextContents());
+        assertEquals(List.of("Zimmer", "Adams"), getPage().getByTestId("absentee-last-name").allTextContents());
     }
 
     // The typo "absenteit" comes from the .feature file, it must stay identical
