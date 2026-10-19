@@ -23,6 +23,7 @@
             <th>Date</th>
             <th>Status</th>
             <th>Motive</th>
+            <th>Comments</th>
         </my_headers>
         <my_rows id="rowsAll">
             <tr th:each="a : ${absences}" data-testid="absence-row">
@@ -36,14 +37,22 @@
                           th:text="${a.status}"></span>
                 </td>
                 <td data-testid="absence-motive" th:text="${a.motiveTitle}"></td>
+                <td>
+                    <button type="button" data-testid="btn-see-comments" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" th:data-absence-id="${a.id}">
+                        Comments
+                    </button>
+                </td>
             </tr>
             <tr th:if="${#lists.isEmpty(absences)}">
-                <td colspan="6" data-testid="no-absences" class="text-center text-muted py-3">
+                <td colspan="7" data-testid="no-absences" class="text-center text-muted py-3">
                     No absences found in your modules.
                 </td>
             </tr>
         </my_rows>
     </div>
+
+    <div th:replace="~{components :: comments_panel(${openCommentsFor}, ${commentErrorMessage})}"></div>
 </section>
 
 </html>

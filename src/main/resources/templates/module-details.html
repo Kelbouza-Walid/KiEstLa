@@ -102,6 +102,7 @@
                 <th>Status</th>
                 <th>Motive</th>
                 <th>Description</th>
+                <th th:if="${isTeacher or isSecretary}">Comments</th>
             </my_headers>
             <my_rows id="rowsAbsences">
                 <tr th:each="absence : ${absences}">
@@ -115,12 +116,22 @@
                     </td>
                     <td data-testid="absence-motive-title" th:text="${absence.motiveTitle}"></td>
                     <td data-testid="absence-motive-description" th:text="${absence.motiveDescription}"></td>
+                    <td th:if="${isTeacher or isSecretary}">
+                        <button type="button" data-testid="btn-see-comments" class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" th:data-absence-id="${absence.id}">
+                            Comments
+                        </button>
+                    </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(absences)}">
-                    <td colspan="6" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
+                    <td th:colspan="${isTeacher or isSecretary} ? 7 : 6" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
                 </tr>
             </my_rows>
         </div>
+
+        <th:block th:if="${isTeacher or isSecretary}">
+            <div th:replace="~{components :: comments_panel(${openCommentsFor}, ${commentErrorMessage})}"></div>
+        </th:block>
     </th:block>
 
     <div th:if="${isTeacher}" class="card shadow-sm mb-4">
