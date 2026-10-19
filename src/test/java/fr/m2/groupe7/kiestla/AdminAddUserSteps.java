@@ -33,6 +33,7 @@ public class AdminAddUserSteps {
     private static final String NEW_FIRST_NAME = "Fabrice";
     private static final String NEW_LAST_NAME = "Bouquet";
     private static final String NEW_LOGIN = "fbouquet";
+    private static final String NEW_EMAIL = "fbouquet@example.com";
     private static final Role NEW_ROLE = Role.TEACHER;
 
     @Autowired
@@ -61,6 +62,7 @@ public class AdminAddUserSteps {
         admin.setFirstName("System");
         admin.setLastName("Admin");
         admin.setLogin("admin");
+        admin.setEmail("admin@example.com");
         admin.setPassword("{noop}testpassword");
         admin.setRole(Role.ADMIN);
         userRepository.save(admin);
@@ -76,6 +78,7 @@ public class AdminAddUserSteps {
         getPage().getByTestId("input-first-name").fill(NEW_FIRST_NAME);
         getPage().getByTestId("input-last-name").fill(NEW_LAST_NAME);
         getPage().getByTestId("input-login").fill(NEW_LOGIN);
+        getPage().getByTestId("input-email").fill(NEW_EMAIL);
     }
 
     @When("I set the user's role")
@@ -100,6 +103,7 @@ public class AdminAddUserSteps {
         User created = userRepository.findByLogin(NEW_LOGIN).orElseThrow();
         assertEquals(NEW_FIRST_NAME, created.getFirstName());
         assertEquals(NEW_LAST_NAME, created.getLastName());
+        assertEquals(NEW_EMAIL, created.getEmail());
         assertEquals(NEW_ROLE, created.getRole());
         // The shown password is the real one, and it is not stored in clear
         assertTrue(passwordEncoder.matches(shownPassword, created.getPassword()));

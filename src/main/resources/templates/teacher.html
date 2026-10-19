@@ -6,11 +6,27 @@
         <div>
             <h1 class="m-0 text-primary">Mes modules</h1>
         </div>
-        <form th:action="@{/logout}" method="post" class="m-0">
-            <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
-                Déconnexion
-            </button>
-        </form>
+        <div class="d-flex align-items-center gap-2">
+            <form th:action="@{/request-password-reset}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-reset-password" class="btn btn-outline-primary">
+                    <i class="bi bi-key me-1"></i> Reset password
+                </button>
+            </form>
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-4" role="alert" data-testid="teacher-success">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <div th:text="${successMessage}"></div>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-4" role="alert" data-testid="teacher-error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div th:text="${errorMessage}"></div>
     </div>
 
     <div th:replace="~{components :: styled_table(~{::#module-headers}, ~{::#module-rows})}">
