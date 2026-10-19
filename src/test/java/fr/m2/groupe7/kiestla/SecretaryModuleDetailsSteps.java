@@ -20,8 +20,10 @@ import fr.m2.groupe7.kiestla.repository.ModuleRepository;
 import fr.m2.groupe7.kiestla.repository.UserRepository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SecretaryModuleDetailsSteps {
 
@@ -42,45 +44,62 @@ public class SecretaryModuleDetailsSteps {
     // Feature 949: Viewing the absences of a student in a module
     // =====================================================================
 
+    private Module studentModule;
+
     @Given("The student has multiple absences registered in the module")
     public void the_student_has_multiple_absences_registered_in_the_module() {
-        User student = new User();
-        student.setFirstName("Gaspard");
-        student.setLastName("Quentin");
-        student.setLogin("gquentin");
-        student.setPassword("pwd");
-        student.setRole(Role.STUDENT);
-        student = userRepository.save(student);
+        User student = saveStudent("Gaspard", "Quentin", "gquentin");
+        User other = saveStudent("Noam", "Faivre", "nfaivre");
 
-        Module module = new Module();
-        module.setName("Functionnal testing");
-        moduleRepository.save(module);
+        studentModule = saveModule("Test fonctionnel");
+        Module otherModule = saveModule("Informatique Responsable");
 
-        Absence absence = new Absence();
-        absence.setStudent(student);
-        absence.setModule(module);
-        absence.setDate(LocalDate.now());
-        absence.setStatus(AbsenceStatus.UNJUSTIFIED);
-        Absence saved = absenceRepository.save(absence);
-
-        Absence absence2 = new Absence();
-        absence2.setStudent(student);
-        absence2.setModule(module);
-        absence2.setDate(LocalDate.now());
-        absence2.setStatus(AbsenceStatus.UNJUSTIFIED);
-        Absence saved2 = absenceRepository.save(absence2);
+        saveAbsence(student, studentModule, LocalDate.of(2026, 10, 1));
+        saveAbsence(student, studentModule, LocalDate.of(2026, 10, 2));
+        // must be hidden by the filter: other student / other module
+        saveAbsence(other, studentModule, LocalDate.of(2026, 10, 3));
+        saveAbsence(student, otherModule, LocalDate.of(2026, 10, 4));
     }
 
     @When("I open the absence list for that student in that module")
     public void i_open_the_absence_list_for_that_student_in_that_module() {
-        // TODO: Naviguer vers la page listant les absences d'un étudiant dans un module
-        // Not implemented yet
+        getPage().navigate("http://localhost:8080/secretary");
+        getPage().getByTestId("select-absence-module").selectOption(String.valueOf(studentModule.getId()));
+        getPage().getByTestId("input-absence-student").fill("Gaspard Quentin");
+        getPage().getByTestId("btn-filter-absences").click();
+        getPage().waitForURL(url -> url.contains("absenceModuleId="));
     }
 
     @Then("I see all of his absences listed individually")
     public void i_see_all_of_his_absences_listed_individually() {
-        // TODO: Vérifier que toutes les absences de l'étudiant sont affichées
-        // Not implemented yet
+        assertThat(getPage().getByTestId("absence-student")).hasCount(2);
+        assertEquals(List.of("Gaspard Quentin", "Gaspard Quentin"),
+                getPage().getByTestId("absence-student").allTextContents());
+    }
+
+    private User saveStudent(String firstName, String lastName, String login) {
+        User student = new User();
+        student.setFirstName(firstName);
+        student.setLastName(lastName);
+        student.setLogin(login);
+        student.setPassword("pwd");
+        student.setRole(Role.STUDENT);
+        return userRepository.save(student);
+    }
+
+    private Module saveModule(String name) {
+        Module module = new Module();
+        module.setName(name);
+        return moduleRepository.save(module);
+    }
+
+    private void saveAbsence(User student, Module module, LocalDate date) {
+        Absence absence = new Absence();
+        absence.setStudent(student);
+        absence.setModule(module);
+        absence.setDate(date);
+        absence.setStatus(AbsenceStatus.UNJUSTIFIED);
+        absenceRepository.save(absence);
     }
 
     // =====================================================================
