@@ -74,9 +74,11 @@ public class SecretaryController {
     public String index(@RequestParam(required = false) Long moduleId,
                         @RequestParam(required = false) String student,
                         @RequestParam(defaultValue = "MODULE") AbsenteeService.SortBy sort,
+                        @RequestParam(required = false) Long absenceModuleId,
+                        @RequestParam(required = false) String absenceStudent,
                         Authentication authentication,
                         Model model) {
-        List<AbsenceSummary> absences = absenceService.getAbsences();
+        List<AbsenceSummary> absences = absenceService.getAbsencesForSecretary(absenceModuleId, absenceStudent);
         List<ModuleSummary> modules = moduleService.getAllModulesSummary();
 
         if (authentication != null) {
@@ -90,6 +92,8 @@ public class SecretaryController {
         model.addAttribute("selectedModuleId", moduleId);
         model.addAttribute("studentQuery", student);
         model.addAttribute("sort", sort.name());
+        model.addAttribute("selectedAbsenceModuleId", absenceModuleId);
+        model.addAttribute("absenceStudentQuery", absenceStudent);
         return "secretary";
     }
 

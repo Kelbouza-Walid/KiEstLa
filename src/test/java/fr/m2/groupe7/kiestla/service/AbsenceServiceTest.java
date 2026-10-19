@@ -249,6 +249,59 @@ class AbsenceServiceTest {
                 List.of());
     }
 
+    private void givenAbsencesInTwoModules() {
+        Module info = new Module();
+        info.setId(10L);
+        info.setName("Informatique Responsable");
+        Module test = new Module();
+        test.setId(20L);
+        test.setName("Test fonctionnel");
+
+        Absence a1 = createAbsence(1L, "Gaspard", "Quentin", LocalDate.of(2026, 10, 3), AbsenceStatus.UNJUSTIFIED, null, null);
+        a1.setModule(info);
+        Absence a2 = createAbsence(2L, "Gaspard", "Quentin", LocalDate.of(2026, 10, 2), AbsenceStatus.UNJUSTIFIED, null, null);
+        a2.setModule(test);
+        Absence a3 = createAbsence(3L, "Noam", "Faivre", LocalDate.of(2026, 10, 1), AbsenceStatus.UNJUSTIFIED, null, null);
+        a3.setModule(info);
+        when(absenceRepository.findAllByOrderByDateDesc()).thenReturn(List.of(a1, a2, a3));
+    }
+
+    @Test
+    void getAbsencesForSecretary_noFilter_returnsAll() {
+        givenAbsencesInTwoModules();
+
+        List<AbsenceSummary> result = absenceService.getAbsencesForSecretary(null, null);
+
+        assertEquals(List.of(1L, 2L, 3L), result.stream().map(AbsenceSummary::id).toList());
+    }
+
+    @Test
+    void getAbsencesForSecretary_filterByModule() {
+        givenAbsencesInTwoModules();
+
+        List<AbsenceSummary> result = absenceService.getAbsencesForSecretary(10L, null);
+
+        assertEquals(List.of(1L, 3L), result.stream().map(AbsenceSummary::id).toList());
+    }
+
+    @Test
+    void getAbsencesForSecretary_filterByStudentName_isCaseInsensitive() {
+        givenAbsencesInTwoModules();
+
+        List<AbsenceSummary> result = absenceService.getAbsencesForSecretary(null, " gaspard QUENTIN ");
+
+        assertEquals(List.of(1L, 2L), result.stream().map(AbsenceSummary::id).toList());
+    }
+
+    @Test
+    void getAbsencesForSecretary_filterByModuleAndStudent() {
+        givenAbsencesInTwoModules();
+
+        List<AbsenceSummary> result = absenceService.getAbsencesForSecretary(10L, "faivre");
+
+        assertEquals(List.of(3L), result.stream().map(AbsenceSummary::id).toList());
+    }
+
     private Absence createAbsence(Long id, String firstName, String lastName, LocalDate date, AbsenceStatus status,
                                   String motiveTitle, String motiveDescription) {
         User student = new User();

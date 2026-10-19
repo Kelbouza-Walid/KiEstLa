@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AbsenceService {
@@ -47,6 +48,24 @@ public class AbsenceService {
     public List<AbsenceSummary> getAbsences() {
         return absenceRepository.findAllByOrderByDateDesc()
                 .stream()
+                .map(AbsenceSummary::from)
+                .toList();
+    }
+
+    /**
+     * For the secretary: all the absences, optionally filtered by module and by
+     * student name (first name, last name or both, case-insensitive).
+     */
+    @Transactional(readOnly = true)
+    public List<AbsenceSummary> getAbsencesForSecretary(Long moduleId, String studentQuery) {
+        String needle = studentQuery == null ? "" : studentQuery.trim().toLowerCase(Locale.ROOT);
+
+        return absenceRepository.findAllByOrderByDateDesc()
+                .stream()
+                .filter(a -> moduleId == null || a.getModule().getId().equals(moduleId))
+                .filter(a -> needle.isEmpty()
+                        || (a.getStudent().getFirstName() + " " + a.getStudent().getLastName())
+                                .toLowerCase(Locale.ROOT).contains(needle))
                 .map(AbsenceSummary::from)
                 .toList();
     }
