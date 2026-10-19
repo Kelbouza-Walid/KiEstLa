@@ -108,14 +108,15 @@ class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void createUser_success() throws Exception {
-        CreateUserRequest expected = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", Role.TEACHER);
+        CreateUserRequest expected = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", "fbouquet@example.com", Role.TEACHER);
         when(userService.createUser(expected)).thenReturn(new CreatedUser(
-                new AdminUserSummary(42L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER), "Abc23xyz45Kq"));
+                new AdminUserSummary(42L, "Fabrice", "Bouquet", "fbouquet", "fbouquet@example.com", Role.TEACHER), "Abc23xyz45Kq"));
 
         mockMvc.perform(post("/admin/users").with(csrf())
                 .param("firstName", "Fabrice")
                 .param("lastName", "Bouquet")
                 .param("login", "fbouquet")
+                .param("email", "fbouquet@example.com")
                 .param("role", "TEACHER"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
@@ -132,6 +133,39 @@ class AdminControllerTest {
                 .param("firstName", "Fabrice")
                 .param("lastName", "Bouquet")
                 .param("login", " ")
+                .param("email", "fbouquet@example.com")
+                .param("role", "TEACHER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        verify(userService, never()).createUser(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createUser_invalidEmail() throws Exception {
+        mockMvc.perform(post("/admin/users").with(csrf())
+                .param("firstName", "Fabrice")
+                .param("lastName", "Bouquet")
+                .param("login", "fbouquet")
+                .param("email", "not-a-valid-email")
+                .param("role", "TEACHER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        verify(userService, never()).createUser(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createUser_blankEmail() throws Exception {
+        mockMvc.perform(post("/admin/users").with(csrf())
+                .param("firstName", "Fabrice")
+                .param("lastName", "Bouquet")
+                .param("login", "fbouquet")
+                .param("email", " ")
                 .param("role", "TEACHER"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
@@ -146,7 +180,8 @@ class AdminControllerTest {
         mockMvc.perform(post("/admin/users").with(csrf())
                 .param("firstName", "Fabrice")
                 .param("lastName", "Bouquet")
-                .param("login", "fbouquet"))
+                .param("login", "fbouquet")
+                .param("email", "fbouquet@example.com"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
                 .andExpect(flash().attributeExists("errorMessage"));
@@ -164,10 +199,28 @@ class AdminControllerTest {
                 .param("firstName", "Fabrice")
                 .param("lastName", "Bouquet")
                 .param("login", "fbouquet")
+                .param("email", "fbouquet@example.com")
                 .param("role", "TEACHER"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin"))
                 .andExpect(flash().attribute("errorMessage", "This login is already used."));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createUser_duplicateEmail() throws Exception {
+        when(userService.createUser(any())).thenThrow(new BusinessException("This email is already used."));
+
+        mockMvc.perform(post("/admin/users").with(csrf())
+                .header("Referer", "/admin")
+                .param("firstName", "Fabrice")
+                .param("lastName", "Bouquet")
+                .param("login", "fbouquet")
+                .param("email", "fbouquet@example.com")
+                .param("role", "TEACHER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin"))
+                .andExpect(flash().attribute("errorMessage", "This email is already used."));
     }
 
     @Test
@@ -331,6 +384,7 @@ class AdminControllerTest {
                 .param("firstName", "Fabrice")
                 .param("lastName", "Bouquet")
                 .param("login", "fbouquet")
+                .param("email", "fbouquet@example.com")
                 .param("role", "TEACHER"));
     }
 }

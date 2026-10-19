@@ -1,6 +1,7 @@
 package fr.m2.groupe7.kiestla.dto;
 
 import fr.m2.groupe7.kiestla.entity.Role;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,5 +14,10 @@ public record CreateUserRequest(
         @NotBlank @Size(max = 100) String firstName,
         @NotBlank @Size(max = 100) String lastName,
         @NotBlank @Size(max = 50) String login,
+        @NotBlank @Email @Size(max = 150) String email,
         @NotNull Role role) {
+
+    public CreateUserRequest(String firstName, String lastName, String login, Role role) {
+        this(firstName, lastName, login, login != null && !login.isBlank() ? login.trim().toLowerCase() + "@example.com" : null, role);
+    }
 }

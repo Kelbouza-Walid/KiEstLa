@@ -8,7 +8,12 @@ public record AdminUserSummary(
         String firstName,
         String lastName,
         String login,
+        String email,
         Role role) {
+
+    public AdminUserSummary(Long id, String firstName, String lastName, String login, Role role) {
+        this(id, firstName, lastName, login, null, role);
+    }
 
     public static AdminUserSummary from(User user) {
         return new AdminUserSummary(
@@ -16,6 +21,7 @@ public record AdminUserSummary(
                 user.getFirstName(),
                 user.getLastName(),
                 user.getLogin(),
+                user.getEmail(),
                 user.getRole());
     }
 }

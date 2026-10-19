@@ -60,6 +60,9 @@ class UserServiceTest {
     @Mock
     private NotifRepository notifRepository;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private UserService userService;
 
@@ -143,8 +146,9 @@ class UserServiceTest {
 
     @Test
     void createUser_success() {
-        CreateUserRequest request = new CreateUserRequest(" Fabrice ", " Bouquet ", " fbouquet ", Role.TEACHER);
+        CreateUserRequest request = new CreateUserRequest(" Fabrice ", " Bouquet ", " fbouquet ", " fbouquet@example.com ", Role.TEACHER);
         when(userRepository.existsByLogin("fbouquet")).thenReturn(false);
+        when(userRepository.existsByEmail("fbouquet@example.com")).thenReturn(false);
         when(passwordGenerator.generate()).thenReturn("Abc23xyz45Kq");
         when(passwordEncoder.encode("Abc23xyz45Kq")).thenReturn("{bcrypt}hashed");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -161,22 +165,50 @@ class UserServiceTest {
         assertEquals("Fabrice", saved.getFirstName());
         assertEquals("Bouquet", saved.getLastName());
         assertEquals("fbouquet", saved.getLogin());
+        assertEquals("fbouquet@example.com", saved.getEmail());
         assertEquals(Role.TEACHER, saved.getRole());
         assertEquals("{bcrypt}hashed", saved.getPassword());
 
-        assertEquals(new AdminUserSummary(42L, "Fabrice", "Bouquet", "fbouquet", Role.TEACHER), result.user());
+        assertEquals(new AdminUserSummary(42L, "Fabrice", "Bouquet", "fbouquet", "fbouquet@example.com", Role.TEACHER), result.user());
         assertEquals("Abc23xyz45Kq", result.generatedPassword());
+        verify(emailService).sendAccountCreationEmail(saved, "Abc23xyz45Kq");
     }
 
     @Test
     void createUser_duplicateLogin() {
-        CreateUserRequest request = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", Role.STUDENT);
+        CreateUserRequest request = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", "fbouquet@example.com", Role.STUDENT);
         when(userRepository.existsByLogin("fbouquet")).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> userService.createUser(request));
 
         verify(userRepository, never()).save(any());
-        verifyNoInteractions(passwordEncoder, passwordGenerator);
+        verifyNoInteractions(passwordEncoder, passwordGenerator, emailService);
+    }
+
+    @Test
+    void createUser_duplicateEmail() {
+        CreateUserRequest request = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", "fbouquet@example.com", Role.STUDENT);
+        when(userRepository.existsByLogin("fbouquet")).thenReturn(false);
+        when(userRepository.existsByEmail("fbouquet@example.com")).thenReturn(true);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> userService.createUser(request));
+        assertEquals("This email is already used.", ex.getMessage());
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(passwordEncoder, passwordGenerator, emailService);
+    }
+
+    @Test
+    void createUser_withoutEmail_doesNotSendEmail() {
+        CreateUserRequest request = new CreateUserRequest("Fabrice", "Bouquet", "fbouquet", null, Role.TEACHER);
+        when(userRepository.existsByLogin("fbouquet")).thenReturn(false);
+        when(passwordGenerator.generate()).thenReturn("Abc23xyz45Kq");
+        when(passwordEncoder.encode("Abc23xyz45Kq")).thenReturn("{bcrypt}hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.createUser(request);
+
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -378,6 +410,41 @@ class UserServiceTest {
         when(userRepository.findAll()).thenReturn(searchableUsers());
 
         assertTrue(userService.searchUsers("zzz", null).isEmpty());
+    }
+
+    @Test
+    void searchUsers_byEmail() {
+        User userWithEmail = createUser(2L, "Suleyman", "Kacmaz", "skacmaz", Role.STUDENT);
+        userWithEmail.setEmail("skacmaz@univ-fcomte.fr");
+        when(userRepository.findAll()).thenReturn(List.of(
+                createUser(1L, "System", "Admin", "admin", Role.ADMIN),
+                userWithEmail
+        ));
+
+        List<AdminUserSummary> result = userService.searchUsers("fcomte", null);
+
+        assertEquals(List.of("skacmaz"), logins(result));
+    }
+
+    @Test
+    void findByEmail_found() {
+        User user = createUser(2L, "Suleyman", "Kacmaz", "skacmaz", Role.STUDENT);
+        user.setEmail("skacmaz@example.com");
+        when(userRepository.findByEmail("skacmaz@example.com")).thenReturn(Optional.of(user));
+
+        Optional<User> result = userService.findByEmail(" SKACMAZ@EXAMPLE.COM ");
+
+        assertTrue(result.isPresent());
+        assertEquals("skacmaz", result.get().getLogin());
+    }
+
+    @Test
+    void findByEmail_blankOrNotFound() {
+        assertTrue(userService.findByEmail(" ").isEmpty());
+        assertTrue(userService.findByEmail(null).isEmpty());
+
+        when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
+        assertTrue(userService.findByEmail("unknown@example.com").isEmpty());
     }
 
     private List<User> searchableUsers() {

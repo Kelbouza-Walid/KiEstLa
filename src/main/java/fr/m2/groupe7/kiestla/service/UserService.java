@@ -40,11 +40,12 @@ public class UserService {
     private final AbsenceRepository absenceRepository;
     private final CommentRepository commentRepository;
     private final NotifRepository notifRepository;
+    private final EmailService emailService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
             PasswordGenerator passwordGenerator, ModuleRepository moduleRepository,
             AbsenceRepository absenceRepository, CommentRepository commentRepository,
-            NotifRepository notifRepository) {
+            NotifRepository notifRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordGenerator = passwordGenerator;
@@ -52,6 +53,7 @@ public class UserService {
         this.absenceRepository = absenceRepository;
         this.commentRepository = commentRepository;
         this.notifRepository = notifRepository;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +82,8 @@ public class UserService {
                 .filter(user -> role == null || user.getRole() == role)
                 .filter(user -> user.getFirstName().toLowerCase(Locale.ROOT).contains(text)
                         || user.getLastName().toLowerCase(Locale.ROOT).contains(text)
-                        || user.getLogin().toLowerCase(Locale.ROOT).contains(text))
+                        || user.getLogin().toLowerCase(Locale.ROOT).contains(text)
+                        || (user.getEmail() != null && user.getEmail().toLowerCase(Locale.ROOT).contains(text)))
                 .sorted(Comparator.comparing(User::getLastName).thenComparing(User::getFirstName))
                 .map(AdminUserSummary::from)
                 .toList();
@@ -111,6 +114,7 @@ public class UserService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getLogin(),
+                user.getEmail(),
                 user.getRole(),
                 enrolledModules,
                 referencedModules,
@@ -118,11 +122,25 @@ public class UserService {
     }
 
     /**
+     * Finds a user by email.
+     *
+     * @param email the email address
+     * @return an Optional containing the User if found
+     */
+    @Transactional(readOnly = true)
+    public java.util.Optional<User> findByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /**
      * Creates a new user with a randomly generated password.
      *
      * @param request the user's personal information and role
      * @return the created user and its generated password (in clear, to be shown once)
-     * @throws BusinessException if the login is already used
+     * @throws BusinessException if the login or email is already used
      */
     @Transactional
     public CreatedUser createUser(CreateUserRequest request) {
@@ -131,16 +149,29 @@ public class UserService {
             throw new BusinessException("This login is already used.");
         }
 
+        String email = request.email() != null ? request.email().trim().toLowerCase(Locale.ROOT) : null;
+        if (email != null && !email.isBlank()) {
+            if (userRepository.existsByEmail(email)) {
+                throw new BusinessException("This email is already used.");
+            }
+        }
+
         String generatedPassword = passwordGenerator.generate();
 
         User user = new User();
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
         user.setLogin(login);
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(generatedPassword));
         user.setRole(request.role());
 
         User saved = userRepository.save(user);
+
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            emailService.sendAccountCreationEmail(saved, generatedPassword);
+        }
+
         return new CreatedUser(AdminUserSummary.from(saved), generatedPassword);
     }
 

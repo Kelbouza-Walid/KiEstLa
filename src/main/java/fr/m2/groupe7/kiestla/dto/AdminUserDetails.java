@@ -13,8 +13,14 @@ public record AdminUserDetails(
         String firstName,
         String lastName,
         String login,
+        String email,
         Role role,
         List<ModuleSummary> enrolledModules,
         List<ModuleSummary> referencedModules,
         long absenceCount) {
+
+    public AdminUserDetails(Long id, String firstName, String lastName, String login, Role role,
+            List<ModuleSummary> enrolledModules, List<ModuleSummary> referencedModules, long absenceCount) {
+        this(id, firstName, lastName, login, null, role, enrolledModules, referencedModules, absenceCount);
+    }
 }
