@@ -5,6 +5,7 @@ As a secretary, I want to view all the absences of a specific student in a modul
 Background:
     Given I have already logged in
 
+@implemented
 Scenario: Viewing all absences of a student in a module
   Given The student has multiple absences registered in the module
   When I open the absence list for that student in that module

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="m-0 text-primary">My Modules</h1>
+        <div class="d-flex align-items-center gap-2">
+            <form th:action="@{/request-password-reset}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-reset-password" class="btn btn-outline-primary">
+                    <i class="bi bi-key me-1"></i> Reset password
+                </button>
+            </form>
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-4" role="alert" data-testid="student-success">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <div th:text="${successMessage}"></div>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-4" role="alert" data-testid="student-error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div th:text="${errorMessage}"></div>
+    </div>
+
+    <div th:replace="~{components :: styled_table(~{::#headers1}, ~{::#rows1})}">
+        <my_headers id="headers1">
+            <th>Name</th>
+            <th>Referent Teacher</th>
+        </my_headers>
+        <my_rows id="rows1">
+            <tr th:each="module : ${modules}" data-testid="student-module"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
+                <td data-testid="module-name" th:text="${module.name}"></td>
+                <td data-testid="module-teacher" th:text="${module.referenceTeacherLastName ?: 'None'}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(modules)}">
+                <td colspan="2" data-testid="no-modules" class="text-center text-muted py-3">You are not enrolled in any modules</td>
+            </tr>
+        </my_rows>
+    </div>
+
+    <h1 class="mb-4 text-primary">My Absences</h1>
+
+    <form th:action="@{/student}" method="get" class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label for="absence-sort" class="form-label">Sort absences</label>
+            <select id="absence-sort" name="sortBy" class="form-select"
+                    data-testid="absence-sort" onchange="this.form.requestSubmit()">
+                <option value="DATE" th:selected="${sortBy == 'DATE'}">Sort by date</option>
+                <option value="MODULE" th:selected="${sortBy == 'MODULE'}">Sort by module</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="absence-module-filter" class="form-label">Filter by module</label>
+            <select id="absence-module-filter" name="module" class="form-select"
+                    data-testid="absence-module-filter" onchange="this.form.requestSubmit()">
+                <option value="" th:selected="${selectedModule == null}">All modules</option>
+                <option th:each="module : ${modules}" th:value="${module.name}" th:text="${module.name}"
+                        th:selected="${module.name == selectedModule}"></option>
+            </select>
+        </div>
+    </form>
+
+    <div th:replace="~{components :: styled_table(~{::#headers2}, ~{::#rows2})}">
+        <my_headers id="headers2">
+            <th>Module</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Motive</th>
+            <th>Description</th>
+        </my_headers>
+        <my_rows id="rows2">
+            <tr th:each="absence : ${absences}" data-testid="student-absence"
+                th:onclick="'window.location.href=\'/student/absences/' + ${absence.id} + '\''"
+                style="cursor: pointer;">
+                <td data-testid="absence-module" th:text="${absence.moduleName}"></td>
+                <td data-testid="absence-date" th:text="${absence.date}"></td>
+                <td>
+                    <span data-testid="absence-status"
+                          th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
+                          th:text="${absence.status}"></span>
+                </td>
+                <td data-testid="absence-motive-title" th:text="${absence.motiveTitle}"></td>
+                <td data-testid="absence-motive-description" th:text="${absence.motiveDescription}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(absences)}">
+                <td colspan="5" data-testid="no-absences" class="text-center text-muted py-3">No absences found</td>
+            </tr>
+        </my_rows>
+    </div>
+</section>
+
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm mb-3" data-testid="btn-back-admin">&larr; Back</a>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-12 col-md-8 col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="h4 text-primary fw-bold mb-1">
+                            <i class="bi bi-pencil-square me-2"></i>Edit a user
+                        </h2>
+                        <p class="text-muted small mb-0">The password is not changed</p>
+                    </div>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div data-testid="error-message" th:text="${errorMessage}"></div>
+                    </div>
+
+                    <form th:action="@{/admin/users/{id}(id=${editedUser.id})}" method="post">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="firstName" class="form-label">First name</label>
+                                <input type="text" id="firstName" name="firstName" class="form-control"
+                                       th:value="${editedUser.firstName}" data-testid="input-first-name"
+                                       required maxlength="100">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="lastName" class="form-label">Last name</label>
+                                <input type="text" id="lastName" name="lastName" class="form-control"
+                                       th:value="${editedUser.lastName}" data-testid="input-last-name"
+                                       required maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="login" class="form-label">Login</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                                <input type="text" id="login" name="login" class="form-control"
+                                       th:value="${editedUser.login}" data-testid="input-login"
+                                       required maxlength="50">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="role" class="form-label">Role</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
+                                <select id="role" name="role" class="form-select" data-testid="select-role" required>
+                                    <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"
+                                            th:selected="${role == editedUser.role}"></option>
+                                </select>
+                            </div>
+                            <div class="form-text">
+                                Changing the role removes the user from all their modules.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" data-testid="btn-confirm-update">
+                            <i class="bi bi-check-lg me-1"></i> Save changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</html>

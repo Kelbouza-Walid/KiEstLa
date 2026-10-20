@@ -1,4 +1,5 @@
 # language: en
+@implemented
 Feature: Student views own absences
   As a student
   I want to view my own absences

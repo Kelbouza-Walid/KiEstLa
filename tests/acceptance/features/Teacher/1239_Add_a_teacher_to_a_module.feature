@@ -5,6 +5,7 @@ Feature: Add a teacher to a module
   Background: I am a reference teacher
     And I am logged in
 
+  @implemented
   Scenario: Adding a new teacher
     Given The teacher exists in the database
     When I select the teacher

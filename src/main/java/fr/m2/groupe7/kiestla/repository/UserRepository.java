@@ -15,10 +15,14 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByLogin(String login);
+    Optional<User> findByEmail(String email);
     @EntityGraph(attributePaths = "modules")
     Optional<User> findModulesByLogin(String login);
     @EntityGraph(attributePaths = "modules")
     Optional<User> findWithModulesById(Long id);
     List<User> findByRole(Role role);
     boolean existsByLogin(String login);
+    boolean existsByLoginAndIdNot(String login, Long id);
+    boolean existsByEmail(String email);
+    boolean existsByEmailAndIdNot(String email, Long id);
 }

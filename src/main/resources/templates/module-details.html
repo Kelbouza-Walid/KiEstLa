@@ -2,13 +2,18 @@
 <html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
 
 <section>
-    <a href="/secretary" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back</a>
+    <a th:href="${backUrl}" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back</a>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
 
     <h1 class="mb-2 text-primary" th:text="${module.name}">Module Name</h1>
     <p class="text-muted mb-4">
         Referent Teacher:
-        <strong th:text="${module.referenceTeacher != null ? module.referenceTeacher.firstName + ' ' + module.referenceTeacher.lastName : 'None'}">None</strong>
+        <strong th:text="${module.referenceTeacherName ?: 'None'}">None</strong>
     </p>
+    <a th:if="${isAdmin}" th:href="@{/admin/modules/{id}/members(id=${module.id})}"
+       data-testid="btn-module-members" class="btn btn-outline-primary mb-4">Manage members</a>
 
     <!-- Students enrolled in this module -->
     <h4 class="mb-3">Students</h4>
@@ -18,42 +23,148 @@
             <th>Last Name</th>
         </my_headers>
         <my_rows id="rowsStudents">
-            <tr th:each="student : ${module.students}">
-                <td th:text="${student.firstName}"></td>
-                <td th:text="${student.lastName}"></td>
+            <tr th:each="student : ${module.students}" data-testid="module-student">
+                <td data-testid="student-first-name" th:text="${student.firstName}"></td>
+                <td data-testid="student-last-name" th:text="${student.lastName}"></td>
             </tr>
-            <tr th:if="${#sets.isEmpty(module.students)}">
+            <tr th:if="${#lists.isEmpty(module.students)}">
                 <td colspan="2" class="text-center text-muted py-3">No students enrolled in this module.</td>
             </tr>
         </my_rows>
     </div>
 
-    <!-- Absences for this module -->
-    <h4 class="mb-3">Absences</h4>
-    <div th:replace="~{components :: styled_table(~{::#headersAbsences}, ~{::#rowsAbsences})}">
-        <my_headers id="headersAbsences">
-            <th>ID</th>
-            <th>Student</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Justification</th>
+    <div th:if="${isTeacher}" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Add a student</h4>
+            <p th:if="${#lists.isEmpty(availableStudents)}" class="text-muted mb-0">
+                No students available to add.
+            </p>
+            <form th:unless="${#lists.isEmpty(availableStudents)}"
+                  th:action="@{/teacher/modules/{id}/students(id=${module.id})}" method="post"
+                  class="d-flex flex-wrap gap-2">
+                <select name="studentId" class="form-select" aria-label="Student" required>
+                    <option value="" disabled selected>Select a student</option>
+                    <option th:each="student : ${availableStudents}"
+                            th:value="${student.id}"
+                            th:text="${student.firstName + ' ' + student.lastName + ' (' + student.login + ')'}"></option>
+                </select>
+                <button type="submit" class="btn btn-primary">Add student</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Teachers of this module (enrolled and reference) -->
+    <h4 class="mb-3">Teachers</h4>
+    <div th:replace="~{components :: styled_table(~{::#headersTeachers}, ~{::#rowsTeachers})}">
+        <my_headers id="headersTeachers">
+            <th>First Name</th>
+            <th>Last Name</th>
         </my_headers>
-        <my_rows id="rowsAbsences">
-            <tr th:each="absence : ${absences}">
-                <td data-testid="absence-id" th:text="${absence.id}"></td>
-                <td data-testid="absence-student" th:text="${absence.student.firstName + ' ' + absence.student.lastName}"></td>
-                <td data-testid="absence-date" th:text="${absence.date}"></td>
-                <td>
-                    <span data-testid="absence-status"
-                          th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
-                          th:text="${absence.status}"></span>
-                </td>
-                <td data-testid="absence-justification" th:text="${absence.justification}"></td>
+        <my_rows id="rowsTeachers">
+            <tr th:each="teacher : ${module.teachers}">
+                <td th:text="${teacher.firstName}"></td>
+                <td th:text="${teacher.lastName}"></td>
             </tr>
-            <tr th:if="${#lists.isEmpty(absences)}">
-                <td colspan="5" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
+            <tr th:if="${#lists.isEmpty(module.teachers)}">
+                <td colspan="2" class="text-center text-muted py-3">No teachers assigned to this module.</td>
             </tr>
         </my_rows>
+    </div>
+
+    <div th:if="${isTeacher and isReferenceTeacher}" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Add a teacher</h4>
+            <p th:if="${#lists.isEmpty(availableTeachers)}" class="text-muted mb-0">
+                No other teachers available to add.
+            </p>
+            <form th:unless="${#lists.isEmpty(availableTeachers)}"
+                  th:action="@{/teacher/modules/{id}/teachers(id=${module.id})}" method="post"
+                  class="d-flex flex-wrap gap-2">
+                <select name="teacherId" class="form-select" aria-label="Teacher" required>
+                    <option value="" disabled selected>Select a teacher</option>
+                    <option th:each="teacher : ${availableTeachers}"
+                            th:value="${teacher.id}"
+                            th:text="${teacher.firstName + ' ' + teacher.lastName + ' (' + teacher.login + ')'}"></option>
+                </select>
+                <button type="submit" class="btn btn-primary">Add teacher</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Absences for this module -->
+    <th:block th:unless="${isStudent}">
+        <h4 class="mb-3">Absences</h4>
+        <div th:replace="~{components :: styled_table(~{::#headersAbsences}, ~{::#rowsAbsences})}">
+            <my_headers id="headersAbsences">
+                <th>ID</th>
+                <th>Student</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Motive</th>
+                <th>Description</th>
+                <th th:if="${isTeacher or isSecretary}">Comments</th>
+            </my_headers>
+            <my_rows id="rowsAbsences">
+                <tr th:each="absence : ${absences}">
+                    <td data-testid="absence-id" th:text="${absence.id}"></td>
+                    <td data-testid="absence-student" th:text="${absence.studentName}"></td>
+                    <td data-testid="absence-date" th:text="${absence.date}"></td>
+                    <td>
+                        <span data-testid="absence-status"
+                              th:class="${absence.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
+                              th:text="${absence.status}"></span>
+                    </td>
+                    <td data-testid="absence-motive-title" th:text="${absence.motiveTitle}"></td>
+                    <td data-testid="absence-motive-description" th:text="${absence.motiveDescription}"></td>
+                    <td th:if="${isTeacher or isSecretary}">
+                        <button type="button" data-testid="btn-see-comments" class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" th:data-absence-id="${absence.id}">
+                            Comments
+                        </button>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(absences)}">
+                    <td th:colspan="${isTeacher or isSecretary} ? 7 : 6" data-testid="module-status" class="text-center text-muted py-3">No absences found for this module.</td>
+                </tr>
+            </my_rows>
+        </div>
+
+        <th:block th:if="${isTeacher or isSecretary}">
+            <div th:replace="~{components :: comments_panel(${openCommentsFor}, ${commentErrorMessage})}"></div>
+        </th:block>
+    </th:block>
+
+    <div th:if="${isTeacher}" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Add an absence</h4>
+            <p th:if="${#lists.isEmpty(module.students)}" class="text-muted mb-0">
+                No students are enrolled in this module.
+            </p>
+            <form th:unless="${#lists.isEmpty(module.students)}"
+                  th:action="@{/teacher/modules/{id}/absences(id=${module.id})}" method="post"
+                  class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="absentStudentId" class="form-label">Student</label>
+                    <select id="absentStudentId" name="absentStudentId" class="form-select"
+                            data-testid="select-absence-student" required>
+                        <option value="" disabled selected>Select a student</option>
+                        <option th:each="student : ${module.students}"
+                                th:value="${student.id}"
+                                th:text="${student.firstName + ' ' + student.lastName}"></option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="absenceDate" class="form-label">Date</label>
+                    <input id="absenceDate" type="date" name="date" class="form-control"
+                           data-testid="input-absence-date" required>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100" data-testid="btn-add-absence">
+                        Add absence
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </section>
 

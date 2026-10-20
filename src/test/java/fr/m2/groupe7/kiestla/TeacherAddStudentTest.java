@@ -28,6 +28,9 @@ public class TeacherAddStudentTest {
     private static final String BASE_URL = "http://localhost:8080";
 
     @Autowired
+    private TestDataCleaner testDataCleaner;
+
+    @Autowired
     private AbsenceRepository absenceRepository;
 
     @Autowired
@@ -42,6 +45,7 @@ public class TeacherAddStudentTest {
     private User studentToAdd;
     private User student;
     private Module module;
+    private boolean testDataInitialized;
 
     // Playwright setup
     private Playwright playwright;
@@ -71,12 +75,20 @@ public class TeacherAddStudentTest {
 
     @Given("I am a reference teacher")
     public void i_am_a_reference_teacher() {
-        absenceRepository.deleteAll();
-        moduleRepository.deleteAll();
-        userRepository.deleteAll();
+        initializeTestData();
+    }
 
-        referenceTeacher = createUser("Ref", "Teacher", "teacher", Role.TEACHER);
+    private void initializeTestData() {
+        if (testDataInitialized) {
+            return;
+        }
+
+        testDataCleaner.cleanDatabase();
+
+        referenceTeacher = createUser("Ref", "Teacher", "testteacher", Role.TEACHER);
         student = createUser("Alice", "Durand", "student1", Role.STUDENT);
+
+        referenceTeacher.setPassword("testpassword");
 
         Module newModule = new Module();
         newModule.setName("Programmation");
@@ -93,11 +105,13 @@ public class TeacherAddStudentTest {
         absence.setDate(LocalDate.now());
         absence.setStatus(AbsenceStatus.values()[0]); // replace by the desired value
         absenceRepository.save(absence);
+        testDataInitialized = true;
     }
 
     @Given("I am logged in")
     public void i_am_logged_in() {
-        login("teacher", "testpassword");
+        initializeTestData();
+        login("testteacher", "testpassword");
     }
 
     // ---------- Scenario ----------
@@ -109,7 +123,7 @@ public class TeacherAddStudentTest {
 
     @When("I select the teacher")
     public void i_select_the_teacher() {
-        page.navigate(BASE_URL + "/teacher/modules/" + module.getId());
+        page.navigate(BASE_URL + "/module-details/" + module.getId());
         page.selectOption("select[name='teacherId']", String.valueOf(teacherToAdd.getId()));
         page.click("form[action$='/teachers'] button[type='submit']");
     }
@@ -126,7 +140,7 @@ public class TeacherAddStudentTest {
         page = browser.newPage();
         login("teacher2", "testpassword");
 
-        page.navigate(BASE_URL + "/teacher/modules/" + module.getId());
+        page.navigate(BASE_URL + "/module-details/" + module.getId());
         assertThat(page.locator("body")).containsText("Durand");
     }
 
@@ -140,7 +154,7 @@ public class TeacherAddStudentTest {
 
     @When("I select the student")
     public void i_select_the_student() {
-        page.navigate(BASE_URL + "/teacher/modules/" + module.getId());
+        page.navigate(BASE_URL + "/module-details/" + module.getId());
         page.selectOption("select[name='studentId']", String.valueOf(studentToAdd.getId()));
         page.click("form[action$='/students'] button[type='submit']");
     }
@@ -174,6 +188,9 @@ public class TeacherAddStudentTest {
         page.fill("input[name='login']", login);
         page.fill("input[name='password']", password);
         page.click("button[type='submit']");
-        page.waitForURL("**/teacher");
+        if (!page.url().endsWith("/teacher")) {
+            throw new AssertionError("Login failed for '" + login + "'. Page content: "
+                    + page.locator("body").innerText());
+        }
     }
 }

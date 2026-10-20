@@ -5,6 +5,7 @@ Feature: List all absences in a module the teacher is in
 Background: I am a reference teacher
   And I am logged in
   
+@implemented
 Scenario: Sorting absences by modules
   Given I am in several different modules
   When I open the list of all the absences
@@ -12,6 +13,7 @@ Scenario: Sorting absences by modules
   Then I should see the list of absences sorted by module
   And I should not see the absences of students who are not in my modules
   
+@implemented
 Scenario: Sorting absences by student
   Given I am in several different modules
   When I open the list of all the absences

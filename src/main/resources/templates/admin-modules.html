@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back</a>
+    <h1 class="mb-3 text-primary">Modules</h1>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="alert" data-testid="success-message" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" data-testid="error-message" th:text="${errorMessage}"></div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="mb-3">Add a module</h4>
+            <form th:action="@{/admin/modules}" method="post" class="d-flex flex-wrap gap-2">
+                <input type="text" name="name" class="form-control w-auto flex-grow-1" placeholder="Module name"
+                       aria-label="Module name" data-testid="input-module-name" required>
+                <select name="referenceTeacherId" class="form-select w-auto flex-grow-1" aria-label="Reference teacher"
+                        data-testid="select-reference-teacher" required>
+                    <option value="" disabled selected>Select a reference teacher</option>
+                    <option th:each="teacher : ${teachers}"
+                            th:value="${teacher.id}"
+                            th:text="${teacher.firstName + ' ' + teacher.lastName + ' (' + teacher.login + ')'}"></option>
+                </select>
+                <button type="submit" class="btn btn-primary" data-testid="btn-add-module">Add module</button>
+            </form>
+        </div>
+    </div>
+
+    <form th:action="@{/admin/modules}" method="get" class="d-flex gap-2 mb-3">
+        <input type="text" name="name" th:value="${name}" class="form-control"
+               placeholder="Search a module by name" data-testid="input-module-search">
+        <button type="submit" class="btn btn-primary" data-testid="btn-search-module">Search</button>
+    </form>
+
+    <div th:replace="~{components :: styled_table(~{::#headersMod}, ~{::#rowsMod})}">
+        <my_headers id="headersMod">
+            <th>Name</th>
+            <th>Referent Teacher</th>
+            <th>Actions</th>
+        </my_headers>
+        <my_rows id="rowsMod">
+            <tr th:each="module : ${modules}" data-testid="module-row"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
+                <td data-testid="module-name" th:text="${module.name}"></td>
+                <td th:text="${module.referenceTeacherLastName ?: 'None'}"></td>
+                <td onclick="event.stopPropagation()" style="cursor: default;">
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/admin/modules/{id}/members(id=${module.id})}" data-testid="btn-module-members"
+                           class="btn btn-sm btn-outline-primary">Members</a>
+                        <form th:action="@{/admin/modules/{id}/delete(id=${module.id})}" method="post" class="m-0"
+                              onsubmit="return confirm('Are you sure you want to delete this module ? Its enrollments and absences will be deleted too.');">
+                            <button type="submit" data-testid="btn-delete-module" class="btn btn-sm btn-outline-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(modules)}">
+                <td colspan="3" data-testid="no-modules" class="text-center text-muted py-3">No modules found.</td>
+            </tr>
+        </my_rows>
+    </div>
+</section>
+
+</html>

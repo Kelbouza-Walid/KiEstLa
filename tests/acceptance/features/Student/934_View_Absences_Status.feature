@@ -1,4 +1,5 @@
 # language: en
+@implemented
 Feature: Student views absences status
   As a student
   I want to view the status of my absences

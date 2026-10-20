@@ -1,18 +1,57 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Espace enseignant</title>
-</head>
-<body>
-<h1>Bienvenue dans l’espace enseignant</h1>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
 
-<h2>Mes modules</h2>
-<p th:if="${#sets.isEmpty(modules)}">Aucun module ne vous est actuellement attribué.</p>
-<ul th:unless="${#sets.isEmpty(modules)}">
-    <li th:each="module : ${modules}">
-        <a th:href="@{/teacher/modules/{id}(id=${module.id})}" th:text="${module.name}"></a>
-    </li>
-</ul>
-</body>
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="m-0 text-primary">Mes modules</h1>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <form th:action="@{/request-password-reset}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-reset-password" class="btn btn-outline-primary">
+                    <i class="bi bi-key me-1"></i> Reset password
+                </button>
+            </form>
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <button type="submit" data-testid="btn-logout" class="btn btn-outline-secondary">
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-4" role="alert" data-testid="teacher-success">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <div th:text="${successMessage}"></div>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-4" role="alert" data-testid="teacher-error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div th:text="${errorMessage}"></div>
+    </div>
+
+    <div th:replace="~{components :: styled_table(~{::#module-headers}, ~{::#module-rows})}">
+        <my_headers id="module-headers">
+            <th>Module</th>
+            <th>Enseignant référent</th>
+        </my_headers>
+        <my_rows id="module-rows">
+            <tr th:each="module : ${modules}" data-testid="teacher-module"
+                th:onclick="'window.location.href=\'/module-details/' + ${module.id} + '\''"
+                style="cursor: pointer;">
+                <td th:text="${module.name}"></td>
+                <td th:text="${module.referenceTeacherLastName ?: 'Aucun'}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(modules)}">
+                <td colspan="2" class="text-center text-muted py-3">Aucun module ne vous est actuellement attribué.</td>
+            </tr>
+        </my_rows>
+    </div>
+    <a th:href="@{/teacher/absences}" data-testid="btn-all-absences" class="btn btn-outline-primary">
+        See all absences
+    </a>
+    <a th:href="@{/teacher/absentees}" data-testid="btn-absentees" class="btn btn-primary">
+        See absentee students
+    </a>
+</section>
+
 </html>

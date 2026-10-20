@@ -9,11 +9,13 @@ Feature: Student views reference teachers of modules
     And I am enrolled in module "M1" with reference teacher "teacherA"
     And I am enrolled in module "M2" with reference teacher "teacherB"
 
+  @implemented
   Scenario: View reference teachers for all my modules
     When I navigate to my modules page
     Then I should see module "M1" with reference teacher "teacherA"
     And I should see module "M2" with reference teacher "teacherB"
 
+  @implemented
   Scenario: View reference teachers with no modules enrolled
     Given I am not enrolled in any modules
     When I navigate to my modules page

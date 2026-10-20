@@ -1,0 +1,107 @@
+package fr.m2.groupe7.kiestla;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class SecurityAuthorizationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotAccessTeacherEndpoints() throws Exception {
+        mockMvc.perform(get("/teacher"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "student1", roles = "STUDENT")
+    void studentCanViewOwnAbsencesPage() throws Exception {
+        mockMvc.perform(get("/student/absences"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mes absences")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("no-absences")));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotAccessStudentAbsencesPage() throws Exception {
+        mockMvc.perform(get("/student/absences"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotAccessSecretaryEndpoints() throws Exception {
+        mockMvc.perform(get("/secretary"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotAccessAdminEndpoints() throws Exception {
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotAccessSecretaryEndpoints() throws Exception {
+        mockMvc.perform(get("/secretary"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void teacherCannotAccessAdminEndpoints() throws Exception {
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SECRETARY")
+    void secretaryCannotAccessTeacherEndpoints() throws Exception {
+        mockMvc.perform(get("/teacher"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SECRETARY")
+    void secretaryCannotAccessAdminEndpoints() throws Exception {
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void studentCannotAccessCommentEndpoints() throws Exception {
+        mockMvc.perform(get("/absences/1/comments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCannotAccessCommentEndpoints() throws Exception {
+        mockMvc.perform(get("/absences/1/comments"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unauthenticatedUserIsRedirectedToLogin() throws Exception {
+        mockMvc.perform(get("/teacher"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+}

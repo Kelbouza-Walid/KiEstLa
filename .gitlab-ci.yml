@@ -16,6 +16,12 @@ test-unit:
   script:
     - chmod +x mvnw
     - ./mvnw test -Dtest='!CucumberTest'
+    - grep -o 'Total[^%]*%' target/site/jacoco/index.html
+  coverage: '/Total.*?([0-9]{1,3})\D?%/'
+  artifacts:
+    paths:
+      - target/site/jacoco/
+    expire_in: 1 week
   only:
     - merge_requests
     - main
@@ -58,6 +64,8 @@ deploy-to-server:
   script:
     - echo "DB_PASSWORD=$DB_PASSWORD" > .env
     - echo "DB_ROOT_PASSWORD=$DB_ROOT_PASSWORD" >> .env
+    - echo "INITIAL_ADMIN_USERNAME=$INITIAL_ADMIN_USERNAME" >> .env
+    - echo "INITIAL_ADMIN_PASSWORD=$INITIAL_ADMIN_PASSWORD" >> .env
     - ssh $SSH_USER@172.20.128.60 "mkdir -p ~/target"
     - scp target/*.jar $SSH_USER@172.20.128.60:~/target/
     - scp Dockerfile docker-compose.yml .env $SSH_USER@172.20.128.60:~/

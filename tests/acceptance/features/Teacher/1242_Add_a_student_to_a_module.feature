@@ -1,4 +1,5 @@
 # language: en
+@implemented
 Feature: Add a student to a module
   As a reference teacher, I want to be able to add a student to a class I'm a reference for
   

@@ -3,7 +3,8 @@ Feature: Create a new absence
   As a teacher, I expect to be able to add a new absence when a student is not present in my class, and eventually add a comment to clarify the situation
   
 Background: I have already logged in
-  
+
+@implemented
 Scenario: Adding a new absence without a comment
   Given The absent student is registered in the module I teach
   When I select the absent student

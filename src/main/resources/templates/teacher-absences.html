@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/teacher}" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back</a>
+    <h1 class="mb-3 text-primary">All absences</h1>
+    <p class="text-muted">Absences of the students of your modules.</p>
+
+    <div class="mb-3 d-flex gap-2">
+        <a th:href="@{/teacher/absences(sort='MODULE')}" data-testid="btn-sort-module"
+           th:classappend="${sort == 'MODULE'} ? 'btn-primary' : 'btn-outline-primary'"
+           class="btn btn-sm">Sort by module</a>
+        <a th:href="@{/teacher/absences(sort='STUDENT')}" data-testid="btn-sort-student"
+           th:classappend="${sort == 'STUDENT'} ? 'btn-primary' : 'btn-outline-primary'"
+           class="btn btn-sm">Sort by student</a>
+    </div>
+
+    <div th:replace="~{components :: styled_table(~{::#headersAll}, ~{::#rowsAll})}">
+        <my_headers id="headersAll">
+            <th>Module</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Motive</th>
+            <th>Comments</th>
+        </my_headers>
+        <my_rows id="rowsAll">
+            <tr th:each="a : ${absences}" data-testid="absence-row">
+                <td data-testid="absence-module" th:text="${a.moduleName}"></td>
+                <td data-testid="absence-first-name" th:text="${a.firstName}"></td>
+                <td data-testid="absence-last-name" th:text="${a.lastName}"></td>
+                <td data-testid="absence-date" th:text="${a.date}"></td>
+                <td>
+                    <span data-testid="absence-status"
+                          th:class="${a.status.name() == 'UNJUSTIFIED' ? 'badge bg-danger' : 'badge bg-success'}"
+                          th:text="${a.status}"></span>
+                </td>
+                <td data-testid="absence-motive" th:text="${a.motiveTitle}"></td>
+                <td>
+                    <button type="button" data-testid="btn-see-comments" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="offcanvas" data-bs-target="#commentsPanel" th:data-absence-id="${a.id}">
+                        Comments
+                    </button>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(absences)}">
+                <td colspan="7" data-testid="no-absences" class="text-center text-muted py-3">
+                    No absences found in your modules.
+                </td>
+            </tr>
+        </my_rows>
+    </div>
+
+    <div th:replace="~{components :: comments_panel(${openCommentsFor}, ${commentErrorMessage})}"></div>
+</section>
+
+</html>

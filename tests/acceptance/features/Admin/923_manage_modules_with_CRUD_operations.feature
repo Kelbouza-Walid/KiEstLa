@@ -5,16 +5,18 @@ Feature: manage modules with CRUD operations
 
   Background: I have already logged in
 
+  @implemented
   Scenario: lookup modules
     Given Modules exist in the system
     When I search for a module by its name
     Then The matching modules are displayed
 
+  @implemented
   Scenario: add modules
     Given The module information is valid
     When I enter the module name
-    And I add a corresponding description
-    And I confirm the creation
+    And I select a reference teacher
+    And I confirm the module creation
     Then The module is registered in the system
 
   Scenario: update modules
@@ -23,6 +25,7 @@ Feature: manage modules with CRUD operations
     And I confirm the update
     Then The module's information is updated in the system
 
+  @implemented
   Scenario: remove modules
     Given The module exists
     When I select the module to remove

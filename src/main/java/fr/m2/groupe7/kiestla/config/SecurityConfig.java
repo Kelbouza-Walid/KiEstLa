@@ -21,27 +21,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
-                .requestMatchers("/teacher", "/teacher/**").hasRole("TEACHER")
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/login")
-                .usernameParameter("login")
-                .passwordParameter("password")
-                .successHandler(successHandler)
-                .failureUrl("/login?error=true")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout=true")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll()
-            );
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/login", "/forgot-password", "/reset-password", "/reset-password/**", "/error", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                        .requestMatchers("/module-details/**").hasAnyRole("TEACHER", "SECRETARY","STUDENT","ADMIN")
+                        .requestMatchers("/absences/*/comments", "/comments/**").hasAnyRole("TEACHER", "SECRETARY")
+                        .requestMatchers("/teacher", "/teacher/**").hasRole("TEACHER")
+                        .requestMatchers("/secretary", "/secretary/**").hasRole("SECRETARY")
+                        .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/student", "/student/**").hasRole("STUDENT")
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .usernameParameter("login")
+                        .passwordParameter("password")
+                        .successHandler(successHandler)
+                        .failureUrl("/login?error=true")
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll());
 
         return http.build();
     }

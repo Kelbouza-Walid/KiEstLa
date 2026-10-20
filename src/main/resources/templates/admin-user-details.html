@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: main_layout(~{::section})}" xmlns:th="http://www.thymeleaf.org">
+
+<section>
+    <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm mb-3" data-testid="btn-back-admin">&larr; Back</a>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-12 col-md-10 col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h1 class="h3 text-primary fw-bold mb-1" data-testid="details-full-name"
+                                th:text="${userDetails.firstName + ' ' + userDetails.lastName}"></h1>
+                            <span class="badge bg-secondary" data-testid="details-role"
+                                  th:text="${userDetails.role}"></span>
+                        </div>
+                        <a th:href="@{/admin/users/{id}/edit(id=${userDetails.id})}" data-testid="btn-edit-user"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                    </div>
+
+                    <dl class="row mb-4">
+                        <dt class="col-sm-4">Login</dt>
+                        <dd class="col-sm-8" data-testid="details-login" th:text="${userDetails.login}"></dd>
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8" data-testid="details-email" th:text="${userDetails.email}"></dd>
+                        <dt class="col-sm-4">First name</dt>
+                        <dd class="col-sm-8" data-testid="details-first-name" th:text="${userDetails.firstName}"></dd>
+                        <dt class="col-sm-4">Last name</dt>
+                        <dd class="col-sm-8" data-testid="details-last-name" th:text="${userDetails.lastName}"></dd>
+                        <th:block th:if="${userDetails.role.name() == 'STUDENT'}">
+                            <dt class="col-sm-4">Absences</dt>
+                            <dd class="col-sm-8" data-testid="details-absence-count"
+                                th:text="${userDetails.absenceCount}"></dd>
+                        </th:block>
+                    </dl>
+
+                    <h2 class="h5 text-primary">Enrolled modules</h2>
+                    <ul class="list-group mb-4" th:unless="${#lists.isEmpty(userDetails.enrolledModules)}">
+                        <li th:each="module : ${userDetails.enrolledModules}" class="list-group-item"
+                            data-testid="details-enrolled-module">
+                            <a th:href="@{/module-details/{id}(id=${module.id})}" th:text="${module.name}"></a>
+                        </li>
+                    </ul>
+                    <p th:if="${#lists.isEmpty(userDetails.enrolledModules)}" class="text-muted"
+                       data-testid="details-no-enrolled-module">Not enrolled in any module.</p>
+
+                    <th:block th:if="${userDetails.role.name() == 'TEACHER' or !#lists.isEmpty(userDetails.referencedModules)}">
+                        <h2 class="h5 text-primary">Reference teacher of</h2>
+                        <ul class="list-group" th:unless="${#lists.isEmpty(userDetails.referencedModules)}">
+                            <li th:each="module : ${userDetails.referencedModules}" class="list-group-item"
+                                data-testid="details-referenced-module">
+                                <a th:href="@{/module-details/{id}(id=${module.id})}" th:text="${module.name}"></a>
+                            </li>
+                        </ul>
+                        <p th:if="${#lists.isEmpty(userDetails.referencedModules)}" class="text-muted mb-0"
+                           data-testid="details-no-referenced-module">Reference teacher of no module.</p>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</html>
